@@ -1,0 +1,137 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Household {
+  id                String             @id @default(uuid())
+  name              String
+  inviteCode        String             @unique
+  currency          String             @default("₹")
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  users             User[]
+  incomes           Income[]
+  expenses          Expense[]
+  recurringExpenses RecurringExpense[]
+  categoryBudgets   CategoryBudget[]
+  savingsGoals      SavingsGoal[]
+}
+
+model User {
+  id                String             @id @default(uuid())
+  householdId       String
+  household         Household          @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  name              String
+  email             String             @unique
+  passwordHash      String
+  role              String             @default("MEMBER") // "ADMIN" or "MEMBER"
+  avatarColor       String             @default("#6366f1")
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  incomes           Income[]
+  expenses          Expense[]
+  recurringExpenses RecurringExpense[]
+
+  @@index([householdId])
+}
+
+model Income {
+  id           String    @id @default(uuid())
+  householdId  String
+  household    Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source       String
+  amount       Float
+  frequency    String    @default("MONTHLY") // "ONE_TIME", "MONTHLY", "BI_WEEKLY", "WEEKLY"
+  dateReceived DateTime  @default(now())
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([householdId])
+  @@index([userId])
+  @@index([householdId, userId])
+  @@index([householdId, dateReceived])
+}
+
+model Expense {
+  id                 String            @id @default(uuid())
+  householdId        String
+  household          Household         @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  userId             String
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category           String
+  amount             Float
+  date               DateTime          @default(now())
+  description        String
+  isRecurring        Boolean           @default(false)
+  recurringExpenseId String?
+  recurringExpense   RecurringExpense? @relation(fields: [recurringExpenseId], references: [id], onDelete: SetNull)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([householdId])
+  @@index([userId])
+  @@index([householdId, userId])
+  @@index([householdId, date])
+}
+
+model RecurringExpense {
+  id               String    @id @default(uuid())
+  householdId      String
+  household        Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  category         String
+  amount           Float
+  frequency        String    @default("DAYS_INTERVAL") // "DAYS_INTERVAL", "MONTHLY", "QUARTERLY", "YEARLY"
+  startDate        DateTime  @default(now())
+  durationInDays   Int?      // e.g. 28 days for recharges
+  nextDueDate      DateTime
+  confidence       Float     @default(1.0) // 1.0 for manual, < 1.0 for detected
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  expenses         Expense[]
+
+  @@index([householdId])
+  @@index([userId])
+  @@index([householdId, userId])
+  @@index([householdId, nextDueDate])
+}
+
+model SavingsGoal {
+  id            String    @id @default(uuid())
+  householdId   String
+  household     Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  name          String
+  targetAmount  Float
+  currentAmount Float     @default(0)
+  targetDate    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([householdId])
+}
+
+model CategoryBudget {
+  id           String    @id @default(uuid())
+  householdId  String
+  household    Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  category     String
+  monthlyLimit Float
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([householdId, category])
+}
