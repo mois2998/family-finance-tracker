@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     // Scoped query filters
     const incomeWhere: any = { householdId: session.householdId };
     const expenseWhere: any = { householdId: session.householdId };
-    const recurringWhere: any = { householdId: session.householdId };
+    const recurringWhere: any = { householdId: session.householdId, isActive: true };
 
     if (isPersonal) {
       incomeWhere.userId = session.userId;

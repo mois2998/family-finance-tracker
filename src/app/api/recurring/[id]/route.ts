@@ -26,9 +26,52 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
     }
 
+    // Action: Mark as Completed / Paid Off (e.g. final installment of EMI or completed loan)
+    if (action === 'mark_completed') {
+      const updatedRecurring = await prisma.recurringExpense.update({
+        where: { id },
+        data: {
+          isActive: false,
+        },
+        include: {
+          user: {
+            select: { id: true, name: true, avatarColor: true },
+          },
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Commitment marked as completed/paid off',
+        recurringExpense: updatedRecurring,
+      });
+    }
+
+    // Action: Reopen / Reactivate commitment
+    if (action === 'reactivate') {
+      const updatedRecurring = await prisma.recurringExpense.update({
+        where: { id },
+        data: {
+          isActive: true,
+        },
+        include: {
+          user: {
+            select: { id: true, name: true, avatarColor: true },
+          },
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Commitment reactivated',
+        recurringExpense: updatedRecurring,
+      });
+    }
+
     // Action: Mark Paid / Confirm occurrence
     // Creates an expense record, links it, and calculates the next due date
     if (action === 'confirm_paid') {
+      const { markCompleted } = body;
       const paidAmount = actualAmount !== undefined ? parseFloat(actualAmount) : existing.amount;
       const paymentDate = new Date();
 
@@ -51,18 +94,27 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         },
       });
 
-      // Update the recurring commitment's nextDueDate and amount if adjusted
+      // Update the recurring commitment's nextDueDate and amount if adjusted,
+      // or mark as completed if final installment
       const updatedRecurring = await prisma.recurringExpense.update({
         where: { id },
         data: {
           amount: paidAmount, // simple learning from adjusted amount
           nextDueDate: nextDue,
+          isActive: markCompleted ? false : existing.isActive,
+        },
+        include: {
+          user: {
+            select: { id: true, name: true, avatarColor: true },
+          },
         },
       });
 
       return NextResponse.json({
         success: true,
-        message: 'Marked as paid and next due date updated',
+        message: markCompleted
+          ? 'Final payment recorded and EMI marked as completed!'
+          : 'Marked as paid and next due date updated',
         expense: newExpense,
         recurringExpense: updatedRecurring,
       });

@@ -14,6 +14,9 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const view = searchParams.get('view') || 'household';
     const memberId = searchParams.get('memberId');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+    const month = searchParams.get('month'); // e.g. "2026-10"
 
     const where: any = {
       householdId: session.householdId,
@@ -24,6 +27,19 @@ export async function GET(req: NextRequest) {
       where.userId = session.userId;
     } else if (isAdmin && memberId) {
       where.userId = memberId;
+    }
+
+    if (month) {
+      const [yearStr, monthStr] = month.split('-');
+      const y = parseInt(yearStr, 10);
+      const m = parseInt(monthStr, 10) - 1;
+      const start = new Date(Date.UTC(y, m, 1, 0, 0, 0));
+      const end = new Date(Date.UTC(y, m + 1, 0, 23, 59, 59, 999));
+      where.dateReceived = { gte: start, lte: end };
+    } else if (startDate || endDate) {
+      where.dateReceived = {};
+      if (startDate) where.dateReceived.gte = new Date(startDate);
+      if (endDate) where.dateReceived.lte = new Date(endDate);
     }
 
     const incomes = await prisma.income.findMany({

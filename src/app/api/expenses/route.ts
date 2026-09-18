@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    const month = searchParams.get('month'); // e.g. "2026-10"
 
     const where: any = {
       householdId: session.householdId,
@@ -45,8 +46,15 @@ export async function GET(req: NextRequest) {
       };
     }
 
-    // Date range
-    if (startDate || endDate) {
+    // Date range or Month filter
+    if (month) {
+      const [yearStr, monthStr] = month.split('-');
+      const y = parseInt(yearStr, 10);
+      const m = parseInt(monthStr, 10) - 1;
+      const start = new Date(Date.UTC(y, m, 1, 0, 0, 0));
+      const end = new Date(Date.UTC(y, m + 1, 0, 23, 59, 59, 999));
+      where.date = { gte: start, lte: end };
+    } else if (startDate || endDate) {
       where.date = {};
       if (startDate) where.date.gte = new Date(startDate);
       if (endDate) where.date.lte = new Date(endDate);
