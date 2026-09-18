@@ -42,6 +42,7 @@ async function run() {
     execSync('npx prisma db push --accept-data-loss', {
       env: { ...process.env, DATABASE_URL: targetUrl },
       stdio: 'inherit',
+      shell: true,
     });
     console.log('✅ Schema pushed successfully to external database!\n');
   } catch (err) {
