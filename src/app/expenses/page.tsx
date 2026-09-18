@@ -31,8 +31,6 @@ import {
   subMonths,
   parseISO,
   isSameMonth,
-  startOfMonth,
-  endOfMonth,
 } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
 import { useFeedback } from '@/context/FeedbackContext';
@@ -212,38 +210,111 @@ export default function ExpensesPage() {
       const isCurrentOrFuture = selectedMonth >= currentMonthStr;
 
       if (isCurrentOrFuture) {
+        // Parse target year and target month index (0-indexed: 0 = Jan, 1 = Feb, ..., 11 = Dec)
+        const [targetYearStr, targetMonthStr] = selectedMonth.split('-');
+        const targetYear = parseInt(targetYearStr, 10);
+        const targetMonthIdx = parseInt(targetMonthStr, 10) - 1;
+
         // 1. Project Active Recurring Commitments
         // Completed EMIs (isActive === false) are strictly excluded!
         const activeCommitments = rawRecurring.filter((r) => r.isActive !== false);
 
         for (const rec of activeCommitments) {
-          // Check if already paid/logged in this month
-          const alreadyLogged = rawExpenses.some(
-            (e) => e.recurringExpenseId === rec.id || e.description?.toLowerCase().includes(rec.name.toLowerCase())
-          );
+          if (!rec.nextDueDate) continue;
 
-          if (!alreadyLogged) {
-            let projectedDay = 15;
-            if (rec.nextDueDate) {
-              projectedDay = new Date(rec.nextDueDate).getDate();
+          const dueDate = new Date(rec.nextDueDate);
+          const dueYear = dueDate.getFullYear();
+          const dueMonthIdx = dueDate.getMonth();
+          const dueDay = dueDate.getDate();
+          const freq = (rec.frequency || 'MONTHLY').toUpperCase();
+
+          let shouldOccur = false;
+          let occurrenceDay = Math.min(Math.max(dueDay, 1), 28);
+
+          // Accurate Recurrence Cycle Matching:
+          if (freq === 'YEARLY') {
+            // YEARLY commitments ONLY occur in the exact same calendar month as their nextDueDate!
+            // E.g. Insurance due in Feb 2027 will ONLY reflect in February (monthIdx 1), never in Sep/Oct/etc.
+            if (targetMonthIdx === dueMonthIdx && targetYear >= dueYear) {
+              shouldOccur = true;
             }
-            const safeDay = Math.min(Math.max(projectedDay, 1), 28);
-            const projectedDateStr = `${selectedMonth}-${String(safeDay).padStart(2, '0')}T12:00:00.000Z`;
+          } else if (freq === 'QUARTERLY') {
+            // QUARTERLY commitments occur every 3 months from dueMonthIdx
+            const diffMonths = (targetYear - dueYear) * 12 + (targetMonthIdx - dueMonthIdx);
+            if (diffMonths >= 0 && diffMonths % 3 === 0) {
+              shouldOccur = true;
+            }
+          } else if (freq === 'MONTHLY') {
+            // MONTHLY commitments occur every month on or after dueYear & dueMonthIdx
+            const diffMonths = (targetYear - dueYear) * 12 + (targetMonthIdx - dueMonthIdx);
+            if (diffMonths >= 0) {
+              shouldOccur = true;
+            }
+          } else if (freq === 'DAYS_INTERVAL') {
+            // DAYS_INTERVAL (e.g. 28 days for recharges)
+            const intervalDays = rec.durationInDays || 28;
+            const startOfTargetMonth = new Date(Date.UTC(targetYear, targetMonthIdx, 1, 0, 0, 0));
+            const endOfTargetMonth = new Date(Date.UTC(targetYear, targetMonthIdx + 1, 0, 23, 59, 59, 999));
 
-            combined.push({
-              id: `scheduled-rec-${rec.id}`,
-              type: 'EXPENSE',
-              amount: rec.amount,
-              category: rec.category,
-              description: rec.name,
-              notes: `Scheduled commitment (Due around ${format(parseISO(projectedDateStr), 'MMM d')})`,
-              date: projectedDateStr,
-              userId: rec.userId,
-              user: rec.user,
-              isRecurring: true,
-              isScheduled: true,
-              recurringId: rec.id,
-            });
+            let curTime = dueDate.getTime();
+            if (curTime < startOfTargetMonth.getTime()) {
+              const diffMs = startOfTargetMonth.getTime() - curTime;
+              const stepMs = intervalDays * 86400000;
+              const stepsToSkip = Math.floor(diffMs / stepMs);
+              curTime += stepsToSkip * stepMs;
+            }
+
+            while (curTime <= endOfTargetMonth.getTime()) {
+              if (curTime >= startOfTargetMonth.getTime()) {
+                shouldOccur = true;
+                occurrenceDay = new Date(curTime).getUTCDate();
+                break;
+              }
+              curTime += intervalDays * 86400000;
+            }
+          }
+
+          if (shouldOccur) {
+            // Check if already paid/logged in this month
+            const alreadyLogged = rawExpenses.some(
+              (e) =>
+                e.recurringExpenseId === rec.id ||
+                (e.description?.toLowerCase().includes(rec.name.toLowerCase()) &&
+                  isSameMonth(new Date(e.date), new Date(Date.UTC(targetYear, targetMonthIdx, 1))))
+            );
+
+            if (!alreadyLogged) {
+              const safeDay = Math.min(Math.max(occurrenceDay, 1), 28);
+              const projectedDateStr = `${selectedMonth}-${String(safeDay).padStart(2, '0')}T12:00:00.000Z`;
+
+              const isEmi =
+                rec.category?.toLowerCase().includes('emi') ||
+                rec.category?.toLowerCase().includes('loan') ||
+                rec.name?.toLowerCase().includes('emi');
+
+              combined.push({
+                id: `scheduled-rec-${rec.id}`,
+                type: 'EXPENSE',
+                amount: rec.amount,
+                category: rec.category,
+                description: rec.name,
+                notes: `Scheduled ${isEmi ? 'EMI' : 'commitment'} (${
+                  freq === 'YEARLY'
+                    ? 'Annual bill'
+                    : freq === 'QUARTERLY'
+                    ? 'Quarterly bill'
+                    : freq === 'DAYS_INTERVAL'
+                    ? `Every ${rec.durationInDays || 28} days`
+                    : 'Monthly bill'
+                })`,
+                date: projectedDateStr,
+                userId: rec.userId,
+                user: rec.user,
+                isRecurring: true,
+                isScheduled: true,
+                recurringId: rec.id,
+              });
+            }
           }
         }
 
@@ -313,20 +384,56 @@ export default function ExpensesPage() {
     });
   }, [allTransactions, typeFilter, selectedCategory, searchTerm]);
 
-  // Totals for filtered view
-  const totalAdded = useMemo(() => {
+  // =========================================================================
+  // Calculations for Financial KPI Cards
+  // =========================================================================
+
+  // 1. Total Income (Credit): All incomes in the current filtered view
+  const totalIncome = useMemo(() => {
     return filteredTransactions
       .filter((t) => t.type === 'INCOME')
       .reduce((sum, t) => sum + t.amount, 0);
   }, [filteredTransactions]);
 
-  const totalDeducted = useMemo(() => {
+  const actualIncome = useMemo(() => {
     return filteredTransactions
-      .filter((t) => t.type === 'EXPENSE')
+      .filter((t) => t.type === 'INCOME' && !t.isScheduled)
       .reduce((sum, t) => sum + t.amount, 0);
   }, [filteredTransactions]);
 
-  const netCashFlow = totalAdded - totalDeducted;
+  const scheduledIncome = useMemo(() => {
+    return filteredTransactions
+      .filter((t) => t.type === 'INCOME' && t.isScheduled)
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [filteredTransactions]);
+
+  // 2. Scheduled Payments Total (Debit): All upcoming scheduled commitments in this month
+  const scheduledPaymentsTotal = useMemo(() => {
+    return filteredTransactions
+      .filter((t) => t.type === 'EXPENSE' && t.isScheduled)
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [filteredTransactions]);
+
+  const scheduledPaymentsCount = useMemo(() => {
+    return filteredTransactions.filter((t) => t.type === 'EXPENSE' && t.isScheduled).length;
+  }, [filteredTransactions]);
+
+  // 3. Actual Spent (Debit): Expenses already logged/paid
+  const actualSpentTotal = useMemo(() => {
+    return filteredTransactions
+      .filter((t) => t.type === 'EXPENSE' && !t.isScheduled)
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [filteredTransactions]);
+
+  const actualSpentCount = useMemo(() => {
+    return filteredTransactions.filter((t) => t.type === 'EXPENSE' && !t.isScheduled).length;
+  }, [filteredTransactions]);
+
+  // 4. Combined Total Debit = Scheduled + Actual Spent
+  const totalDebit = scheduledPaymentsTotal + actualSpentTotal;
+
+  // 5. Projected Net Balance = Total Income - Total Debit
+  const projectedNetBalance = totalIncome - totalDebit;
 
   // Handle Pay / Record Scheduled item
   const handlePayScheduled = async (t: UnifiedTransaction) => {
@@ -442,8 +549,8 @@ export default function ExpensesPage() {
       onRefreshData={fetchTransactions}
     >
       <div className="space-y-6 pb-6">
-        {/* Header with Title & Net Flow Totals */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        {/* Header with Title & Context */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
               <Receipt className="w-6 h-6 text-indigo-400" />
@@ -451,42 +558,9 @@ export default function ExpensesPage() {
             </h2>
             <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
               {isAdmin && view === 'household'
-                ? 'Consolidated transaction audit trail of all added inflows and deducted expenses across family members'
-                : `Strictly showing transactions for ${currentUser.name}`}
+                ? 'Complete monthly transaction ledger, scheduled recurring obligations, and cash flow across family members'
+                : `Strictly showing transaction ledger and scheduled obligations for ${currentUser.name}`}
             </p>
-          </div>
-
-          {/* Cash Flow / Month Summary Cards */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Total Added / Expected Inflow */}
-            <div className="flex items-center gap-2 bg-emerald-950/40 border border-emerald-800/60 px-3 py-1.5 rounded-xl text-xs">
-              <span className="text-emerald-300">
-                {isFutureMonth ? 'Expected Inflow:' : 'Added:'}
-              </span>
-              <span className="font-bold text-emerald-400">
-                +{currency}{totalAdded.toLocaleString('en-IN')}
-              </span>
-            </div>
-
-            {/* Total Deducted / Scheduled Outflow */}
-            <div className="flex items-center gap-2 bg-rose-950/40 border border-rose-800/60 px-3 py-1.5 rounded-xl text-xs">
-              <span className="text-rose-300">
-                {isFutureMonth ? 'Scheduled Outflow:' : 'Deducted:'}
-              </span>
-              <span className="font-bold text-rose-400">
-                -{currency}{totalDeducted.toLocaleString('en-IN')}
-              </span>
-            </div>
-
-            {/* Net Flow / Projected Savings */}
-            <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 px-3.5 py-1.5 rounded-xl text-xs">
-              <span className="text-slate-400">
-                {isFutureMonth ? 'Projected Net:' : 'Net Flow:'}
-              </span>
-              <span className={`font-bold ${netCashFlow >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                {netCashFlow >= 0 ? '+' : ''}{currency}{netCashFlow.toLocaleString('en-IN')}
-              </span>
-            </div>
           </div>
         </div>
 
@@ -521,7 +595,7 @@ export default function ExpensesPage() {
               {!isAllTime && selectedMonth === nextMonthStr && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1">
                   <Sparkles className="w-3 h-3 text-cyan-400" />
-                  <span>Next Month (Projected)</span>
+                  <span>Next Month</span>
                 </span>
               )}
             </div>
@@ -545,7 +619,7 @@ export default function ExpensesPage() {
               }}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95 ${
                 !isAllTime && selectedMonth === lastMonthStr
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-1 ring-indigo-400/40'
                   : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
               }`}
             >
@@ -610,6 +684,106 @@ export default function ExpensesPage() {
               className="bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer shadow"
               title="Pick any month or year"
             />
+          </div>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* Financial KPI Summary Cards (Requested by User) */}
+        {/* ========================================================================= */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* Card 1: Total Income (Credit) */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-emerald-950/50 via-slate-900/90 to-[#0b1329] border border-emerald-500/30 p-4 rounded-2xl shadow-xl hover:border-emerald-500/50 transition-all">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+                <span>Total Income (Credit)</span>
+              </span>
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/40">
+                Inflow
+              </span>
+            </div>
+            <div className="mt-2.5">
+              <div className="text-2xl sm:text-3xl font-black text-emerald-400 tracking-tight">
+                +{currency}{totalIncome.toLocaleString('en-IN')}
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5 flex-wrap">
+                {actualIncome > 0 && <span>Received: {currency}{actualIncome.toLocaleString('en-IN')}</span>}
+                {actualIncome > 0 && scheduledIncome > 0 && <span>•</span>}
+                {scheduledIncome > 0 && (
+                  <span className="text-cyan-400 font-medium">Expected: {currency}{scheduledIncome.toLocaleString('en-IN')}</span>
+                )}
+                {actualIncome === 0 && scheduledIncome === 0 && <span>No income for this period</span>}
+              </p>
+            </div>
+          </div>
+
+          {/* Card 2: Scheduled Payments Total (Debit) */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-amber-950/40 via-slate-900/90 to-[#0b1329] border border-amber-500/30 p-4 rounded-2xl shadow-xl hover:border-amber-500/50 transition-all">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                <CalendarClock className="w-4 h-4 text-amber-400" />
+                <span>Scheduled Payments (Debit)</span>
+              </span>
+              <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-500/40">
+                Upcoming
+              </span>
+            </div>
+            <div className="mt-2.5">
+              <div className="text-2xl sm:text-3xl font-black text-amber-400 tracking-tight">
+                -{currency}{scheduledPaymentsTotal.toLocaleString('en-IN')}
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">
+                {scheduledPaymentsCount} recurring commitment{scheduledPaymentsCount === 1 ? '' : 's'} / EMIs scheduled
+              </p>
+            </div>
+          </div>
+
+          {/* Card 3: Actual Spent (Debit) */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-rose-950/40 via-slate-900/90 to-[#0b1329] border border-rose-500/30 p-4 rounded-2xl shadow-xl hover:border-rose-500/50 transition-all">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
+                <ArrowDownLeft className="w-4 h-4 text-rose-400" />
+                <span>Actual Spent (Debit)</span>
+              </span>
+              <span className="text-[10px] bg-rose-500/20 text-rose-300 font-bold px-2 py-0.5 rounded-full border border-rose-500/40">
+                Logged Outflow
+              </span>
+            </div>
+            <div className="mt-2.5">
+              <div className="text-2xl sm:text-3xl font-black text-rose-400 tracking-tight">
+                -{currency}{actualSpentTotal.toLocaleString('en-IN')}
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">
+                {actualSpentCount} expense transaction{actualSpentCount === 1 ? '' : 's'} logged
+              </p>
+            </div>
+          </div>
+
+          {/* Card 4: Projected Net Savings */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-950/50 via-slate-900/90 to-[#0b1329] border border-indigo-500/30 p-4 rounded-2xl shadow-xl hover:border-indigo-500/50 transition-all">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                <Wallet className="w-4 h-4 text-indigo-400" />
+                <span>Projected Net Balance</span>
+              </span>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                projectedNetBalance >= 0
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+              }`}>
+                {projectedNetBalance >= 0 ? 'Surplus' : 'Deficit'}
+              </span>
+            </div>
+            <div className="mt-2.5">
+              <div className={`text-2xl sm:text-3xl font-black tracking-tight ${
+                projectedNetBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'
+              }`}>
+                {projectedNetBalance >= 0 ? '+' : ''}{currency}{projectedNetBalance.toLocaleString('en-IN')}
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Income − (Spent + Scheduled)
+              </p>
+            </div>
           </div>
         </div>
 
