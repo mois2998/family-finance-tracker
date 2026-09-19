@@ -114,6 +114,7 @@ export async function GET(req: NextRequest) {
         confidence: r.confidence,
         isActive: r.isActive,
         userId: r.userId,
+        skippedDates: r.skippedDates,
       })),
       now
     );

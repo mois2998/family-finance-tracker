@@ -68,6 +68,86 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       });
     }
 
+    // Action: Skip a particular date or month
+    if (action === 'skip_date') {
+      const { date } = body;
+      if (!date) {
+        return NextResponse.json({ error: 'Date or month to skip is required' }, { status: 400 });
+      }
+
+      let currentSkipped: string[] = [];
+      if (existing.skippedDates) {
+        try {
+          const parsed = JSON.parse(existing.skippedDates);
+          if (Array.isArray(parsed)) currentSkipped = parsed;
+        } catch {
+          currentSkipped = [];
+        }
+      }
+
+      const dateStr = String(date).trim();
+      if (!currentSkipped.includes(dateStr)) {
+        currentSkipped.push(dateStr);
+      }
+
+      const updatedRecurring = await prisma.recurringExpense.update({
+        where: { id },
+        data: {
+          skippedDates: JSON.stringify(currentSkipped),
+        },
+        include: {
+          user: {
+            select: { id: true, name: true, avatarColor: true },
+          },
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Occurrence (${dateStr}) skipped`,
+        recurringExpense: updatedRecurring,
+      });
+    }
+
+    // Action: Unskip / restore a previously skipped date or month
+    if (action === 'unskip_date') {
+      const { date } = body;
+      if (!date) {
+        return NextResponse.json({ error: 'Date or month to unskip is required' }, { status: 400 });
+      }
+
+      let currentSkipped: string[] = [];
+      if (existing.skippedDates) {
+        try {
+          const parsed = JSON.parse(existing.skippedDates);
+          if (Array.isArray(parsed)) currentSkipped = parsed;
+        } catch {
+          currentSkipped = [];
+        }
+      }
+
+      const dateStr = String(date).trim();
+      currentSkipped = currentSkipped.filter((d) => d !== dateStr && !d.startsWith(dateStr) && !dateStr.startsWith(d));
+
+      const updatedRecurring = await prisma.recurringExpense.update({
+        where: { id },
+        data: {
+          skippedDates: JSON.stringify(currentSkipped),
+        },
+        include: {
+          user: {
+            select: { id: true, name: true, avatarColor: true },
+          },
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Occurrence (${dateStr}) unskipped and restored`,
+        recurringExpense: updatedRecurring,
+      });
+    }
+
     // Action: Mark Paid / Confirm occurrence
     // Creates an expense record, links it, and calculates the next due date
     if (action === 'confirm_paid') {

@@ -44,6 +44,7 @@ export interface RecurringExpenseItem {
   confidence: number;
   isActive: boolean;
   userId: string;
+  skippedDates?: string | string[] | null;
 }
 
 export interface ForecastSummary {
@@ -172,6 +173,175 @@ export function calculateNextDueDate(
 }
 
 /**
+ * Safely parse skippedDates JSON array from string or array.
+ */
+export function parseSkippedDates(skipped: string | string[] | null | undefined): string[] {
+  if (!skipped) return [];
+  if (Array.isArray(skipped)) return skipped;
+  try {
+    const parsed = JSON.parse(skipped);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Checks whether an occurrence on a given date or month is skipped.
+ * Supports exact date match ("2026-09-11") and whole month match ("2026-09").
+ */
+export function isOccurrenceSkipped(
+  dateOrDateStr: Date | string,
+  skipped: string | string[] | null | undefined
+): boolean {
+  const list = parseSkippedDates(skipped);
+  if (list.length === 0) return false;
+
+  const d = typeof dateOrDateStr === 'string' ? new Date(dateOrDateStr) : dateOrDateStr;
+  if (isNaN(d.getTime())) return false;
+  const isoDate = format(d, 'yyyy-MM-dd');
+  const monthStr = format(d, 'yyyy-MM');
+
+  return list.includes(isoDate) || list.includes(monthStr);
+}
+
+export interface RecurrenceOccurrence {
+  date: Date;
+  dateStr: string; // "YYYY-MM-DD"
+  isSkipped: boolean;
+}
+
+/**
+ * Calculates recurring occurrences in a given month starting from rec.startDate.
+ * Accurately models EMIs, monthly bills, custom interval days, quarterly, and yearly commitments.
+ */
+export function getOccurrencesForMonth(
+  rec: {
+    startDate: Date | string;
+    frequency?: string | null;
+    durationInDays?: number | null;
+    skippedDates?: string | string[] | null;
+  },
+  targetYear: number,
+  targetMonthIdx: number // 0-indexed: 0 = Jan, 1 = Feb, ..., 8 = Sep
+): RecurrenceOccurrence[] {
+  const startDate = new Date(rec.startDate);
+  if (isNaN(startDate.getTime())) return [];
+
+  const startOfTargetMonth = new Date(Date.UTC(targetYear, targetMonthIdx, 1, 0, 0, 0));
+  const endOfTargetMonth = new Date(Date.UTC(targetYear, targetMonthIdx + 1, 0, 23, 59, 59, 999));
+
+  // If the commitment started strictly after this month ended, there are no occurrences
+  if (startDate.getTime() > endOfTargetMonth.getTime()) {
+    return [];
+  }
+
+  const freq = (rec.frequency || 'MONTHLY').toUpperCase();
+  const occurrences: RecurrenceOccurrence[] = [];
+
+  if (freq === 'MONTHLY') {
+    const startYear = startDate.getUTCFullYear();
+    const startMonthIdx = startDate.getUTCMonth();
+    const diffMonths = (targetYear - startYear) * 12 + (targetMonthIdx - startMonthIdx);
+
+    if (diffMonths >= 0) {
+      const preferredDay = startDate.getUTCDate();
+      const maxDaysInTarget = new Date(Date.UTC(targetYear, targetMonthIdx + 1, 0)).getUTCDate();
+      const safeDay = Math.min(preferredDay, maxDaysInTarget);
+      const occurrenceDate = new Date(Date.UTC(targetYear, targetMonthIdx, safeDay, 12, 0, 0));
+
+      if (
+        occurrenceDate.getTime() >=
+        new Date(Date.UTC(startYear, startMonthIdx, startDate.getUTCDate(), 0, 0, 0)).getTime()
+      ) {
+        const dateStr = format(occurrenceDate, 'yyyy-MM-dd');
+        occurrences.push({
+          date: occurrenceDate,
+          dateStr,
+          isSkipped: isOccurrenceSkipped(occurrenceDate, rec.skippedDates),
+        });
+      }
+    }
+  } else if (freq === 'QUARTERLY') {
+    const startYear = startDate.getUTCFullYear();
+    const startMonthIdx = startDate.getUTCMonth();
+    const diffMonths = (targetYear - startYear) * 12 + (targetMonthIdx - startMonthIdx);
+
+    if (diffMonths >= 0 && diffMonths % 3 === 0) {
+      const preferredDay = startDate.getUTCDate();
+      const maxDaysInTarget = new Date(Date.UTC(targetYear, targetMonthIdx + 1, 0)).getUTCDate();
+      const safeDay = Math.min(preferredDay, maxDaysInTarget);
+      const occurrenceDate = new Date(Date.UTC(targetYear, targetMonthIdx, safeDay, 12, 0, 0));
+
+      if (
+        occurrenceDate.getTime() >=
+        new Date(Date.UTC(startYear, startMonthIdx, startDate.getUTCDate(), 0, 0, 0)).getTime()
+      ) {
+        const dateStr = format(occurrenceDate, 'yyyy-MM-dd');
+        occurrences.push({
+          date: occurrenceDate,
+          dateStr,
+          isSkipped: isOccurrenceSkipped(occurrenceDate, rec.skippedDates),
+        });
+      }
+    }
+  } else if (freq === 'YEARLY') {
+    const startYear = startDate.getUTCFullYear();
+    const startMonthIdx = startDate.getUTCMonth();
+
+    if (targetMonthIdx === startMonthIdx && targetYear >= startYear) {
+      const preferredDay = startDate.getUTCDate();
+      const maxDaysInTarget = new Date(Date.UTC(targetYear, targetMonthIdx + 1, 0)).getUTCDate();
+      const safeDay = Math.min(preferredDay, maxDaysInTarget);
+      const occurrenceDate = new Date(Date.UTC(targetYear, targetMonthIdx, safeDay, 12, 0, 0));
+
+      if (
+        occurrenceDate.getTime() >=
+        new Date(Date.UTC(startYear, startMonthIdx, startDate.getUTCDate(), 0, 0, 0)).getTime()
+      ) {
+        const dateStr = format(occurrenceDate, 'yyyy-MM-dd');
+        occurrences.push({
+          date: occurrenceDate,
+          dateStr,
+          isSkipped: isOccurrenceSkipped(occurrenceDate, rec.skippedDates),
+        });
+      }
+    }
+  } else if (freq === 'DAYS_INTERVAL' || freq === 'WEEKLY' || freq === 'BI_WEEKLY') {
+    const intervalDays =
+      freq === 'WEEKLY'
+        ? 7
+        : freq === 'BI_WEEKLY'
+        ? 14
+        : rec.durationInDays && rec.durationInDays > 0
+        ? rec.durationInDays
+        : 28;
+    const stepMs = intervalDays * 86400000;
+
+    let curTime = startDate.getTime();
+    if (curTime < startOfTargetMonth.getTime()) {
+      const skipSteps = Math.floor((startOfTargetMonth.getTime() - curTime) / stepMs);
+      curTime += skipSteps * stepMs;
+    }
+
+    while (curTime <= endOfTargetMonth.getTime()) {
+      if (curTime >= startOfTargetMonth.getTime()) {
+        const occurrenceDate = new Date(curTime);
+        const dateStr = format(occurrenceDate, 'yyyy-MM-dd');
+        occurrences.push({
+          date: occurrenceDate,
+          dateStr,
+          isSkipped: isOccurrenceSkipped(occurrenceDate, rec.skippedDates),
+        });
+      }
+      curTime += stepMs;
+    }
+  }
+
+  return occurrences;
+}
+
+/**
  * Normalized monthly income for a recurring income source
  */
 export function getMonthlyEquivalentIncome(income: IncomeItem): number {
@@ -284,8 +454,11 @@ export function generateForecastSummary(
 
     const diffDays = differenceInCalendarDays(dueDate, now);
 
+    // If this occurrence date or current month is marked as skipped, do not include in spend
+    const isSkipped = isOccurrenceSkipped(dueDate, rec.skippedDates) || isOccurrenceSkipped(now, rec.skippedDates);
+
     // Check if it falls within current month (remaining days)
-    if (isSameMonth(dueDate, now) && (isAfter(dueDate, now) || diffDays === 0)) {
+    if (!isSkipped && isSameMonth(dueDate, now) && (isAfter(dueDate, now) || diffDays === 0)) {
       // Check if user already logged an expense matching this recurring commitment this month
       const alreadyLogged = currentMonthExpenses.some(
         (e) =>
@@ -298,8 +471,8 @@ export function generateForecastSummary(
       }
     }
 
-    // Add to upcoming list if within the next 45 days
-    if (diffDays >= 0 && diffDays <= 45) {
+    // Add to upcoming list if within the next 45 days and not skipped
+    if (!isSkipped && diffDays >= 0 && diffDays <= 45) {
       upcomingExpenses.push({
         id: `upcoming-${rec.id}-${dueDate.getTime()}`,
         recurringExpenseId: rec.id,

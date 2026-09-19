@@ -34,6 +34,7 @@ import {
 } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
 import { useFeedback } from '@/context/FeedbackContext';
+import { getOccurrencesForMonth } from '@/lib/forecasting';
 
 export interface UnifiedTransaction {
   id: string;
@@ -52,6 +53,7 @@ export interface UnifiedTransaction {
   isRecurring?: boolean;
   frequency?: string;
   isScheduled?: boolean;
+  isSkipped?: boolean;
   recurringId?: string;
 }
 
@@ -207,116 +209,74 @@ export default function ExpensesPage() {
 
     // If viewing a specific month (not all time), project active recurring commitments & expected salaries!
     if (!isAllTime && selectedMonth) {
-      const isCurrentOrFuture = selectedMonth >= currentMonthStr;
+      // Parse target year and target month index (0-indexed: 0 = Jan, 1 = Feb, ..., 11 = Dec)
+      const [targetYearStr, targetMonthStr] = selectedMonth.split('-');
+      const targetYear = parseInt(targetYearStr, 10);
+      const targetMonthIdx = parseInt(targetMonthStr, 10) - 1;
 
-      if (isCurrentOrFuture) {
-        // Parse target year and target month index (0-indexed: 0 = Jan, 1 = Feb, ..., 11 = Dec)
-        const [targetYearStr, targetMonthStr] = selectedMonth.split('-');
-        const targetYear = parseInt(targetYearStr, 10);
-        const targetMonthIdx = parseInt(targetMonthStr, 10) - 1;
+      // 1. Project Active Recurring Commitments starting from their actual startDate!
+      // Completed commitments (isActive === false) are strictly excluded.
+      const activeCommitments = rawRecurring.filter((r) => r.isActive !== false);
 
-        // 1. Project Active Recurring Commitments
-        // Completed EMIs (isActive === false) are strictly excluded!
-        const activeCommitments = rawRecurring.filter((r) => r.isActive !== false);
+      for (const rec of activeCommitments) {
+        const start = rec.startDate || rec.nextDueDate || rec.createdAt;
+        if (!start) continue;
 
-        for (const rec of activeCommitments) {
-          if (!rec.nextDueDate) continue;
+        // Calculate all occurrences for this commitment in selectedMonth based on startDate
+        const occurrences = getOccurrencesForMonth(
+          {
+            startDate: start,
+            frequency: rec.frequency,
+            durationInDays: rec.durationInDays,
+            skippedDates: rec.skippedDates,
+          },
+          targetYear,
+          targetMonthIdx
+        );
 
-          const dueDate = new Date(rec.nextDueDate);
-          const dueYear = dueDate.getFullYear();
-          const dueMonthIdx = dueDate.getMonth();
-          const dueDay = dueDate.getDate();
-          const freq = (rec.frequency || 'MONTHLY').toUpperCase();
+        for (const occ of occurrences) {
+          // Check if already paid/logged in this month
+          const alreadyLogged = rawExpenses.some(
+            (e) =>
+              e.recurringExpenseId === rec.id ||
+              (e.description?.toLowerCase().includes(rec.name.toLowerCase()) &&
+                isSameMonth(new Date(e.date), new Date(Date.UTC(targetYear, targetMonthIdx, 1))))
+          );
 
-          let shouldOccur = false;
-          let occurrenceDay = Math.min(Math.max(dueDay, 1), 28);
+          if (!alreadyLogged) {
+            const isEmi =
+              rec.category?.toLowerCase().includes('emi') ||
+              rec.category?.toLowerCase().includes('loan') ||
+              rec.name?.toLowerCase().includes('emi');
 
-          // Accurate Recurrence Cycle Matching:
-          if (freq === 'YEARLY') {
-            // YEARLY commitments ONLY occur in the exact same calendar month as their nextDueDate!
-            // E.g. Insurance due in Feb 2027 will ONLY reflect in February (monthIdx 1), never in Sep/Oct/etc.
-            if (targetMonthIdx === dueMonthIdx && targetYear >= dueYear) {
-              shouldOccur = true;
-            }
-          } else if (freq === 'QUARTERLY') {
-            // QUARTERLY commitments occur every 3 months from dueMonthIdx
-            const diffMonths = (targetYear - dueYear) * 12 + (targetMonthIdx - dueMonthIdx);
-            if (diffMonths >= 0 && diffMonths % 3 === 0) {
-              shouldOccur = true;
-            }
-          } else if (freq === 'MONTHLY') {
-            // MONTHLY commitments occur every month on or after dueYear & dueMonthIdx
-            const diffMonths = (targetYear - dueYear) * 12 + (targetMonthIdx - dueMonthIdx);
-            if (diffMonths >= 0) {
-              shouldOccur = true;
-            }
-          } else if (freq === 'DAYS_INTERVAL') {
-            // DAYS_INTERVAL (e.g. 28 days for recharges)
-            const intervalDays = rec.durationInDays || 28;
-            const startOfTargetMonth = new Date(Date.UTC(targetYear, targetMonthIdx, 1, 0, 0, 0));
-            const endOfTargetMonth = new Date(Date.UTC(targetYear, targetMonthIdx + 1, 0, 23, 59, 59, 999));
-
-            let curTime = dueDate.getTime();
-            if (curTime < startOfTargetMonth.getTime()) {
-              const diffMs = startOfTargetMonth.getTime() - curTime;
-              const stepMs = intervalDays * 86400000;
-              const stepsToSkip = Math.floor(diffMs / stepMs);
-              curTime += stepsToSkip * stepMs;
-            }
-
-            while (curTime <= endOfTargetMonth.getTime()) {
-              if (curTime >= startOfTargetMonth.getTime()) {
-                shouldOccur = true;
-                occurrenceDay = new Date(curTime).getUTCDate();
-                break;
-              }
-              curTime += intervalDays * 86400000;
-            }
-          }
-
-          if (shouldOccur) {
-            // Check if already paid/logged in this month
-            const alreadyLogged = rawExpenses.some(
-              (e) =>
-                e.recurringExpenseId === rec.id ||
-                (e.description?.toLowerCase().includes(rec.name.toLowerCase()) &&
-                  isSameMonth(new Date(e.date), new Date(Date.UTC(targetYear, targetMonthIdx, 1))))
-            );
-
-            if (!alreadyLogged) {
-              const safeDay = Math.min(Math.max(occurrenceDay, 1), 28);
-              const projectedDateStr = `${selectedMonth}-${String(safeDay).padStart(2, '0')}T12:00:00.000Z`;
-
-              const isEmi =
-                rec.category?.toLowerCase().includes('emi') ||
-                rec.category?.toLowerCase().includes('loan') ||
-                rec.name?.toLowerCase().includes('emi');
-
-              combined.push({
-                id: `scheduled-rec-${rec.id}`,
-                type: 'EXPENSE',
-                amount: rec.amount,
-                category: rec.category,
-                description: rec.name,
-                notes: `Scheduled ${isEmi ? 'EMI' : 'commitment'} (${
-                  freq === 'YEARLY'
-                    ? 'Annual bill'
-                    : freq === 'QUARTERLY'
-                    ? 'Quarterly bill'
-                    : freq === 'DAYS_INTERVAL'
-                    ? `Every ${rec.durationInDays || 28} days`
-                    : 'Monthly bill'
-                })`,
-                date: projectedDateStr,
-                userId: rec.userId,
-                user: rec.user,
-                isRecurring: true,
-                isScheduled: true,
-                recurringId: rec.id,
-              });
-            }
+            combined.push({
+              id: `scheduled-rec-${rec.id}-${occ.dateStr}`,
+              type: 'EXPENSE',
+              amount: rec.amount,
+              category: rec.category,
+              description: rec.name,
+              notes: occ.isSkipped
+                ? `Skipped for this period (${isEmi ? 'EMI' : 'Recurring bill'})`
+                : `Scheduled ${isEmi ? 'EMI' : 'commitment'} (${
+                    rec.frequency === 'YEARLY'
+                      ? 'Annual bill'
+                      : rec.frequency === 'QUARTERLY'
+                      ? 'Quarterly bill'
+                      : rec.frequency === 'DAYS_INTERVAL'
+                      ? `Every ${rec.durationInDays || 28} days`
+                      : 'Monthly bill'
+                  })`,
+              date: `${occ.dateStr}T12:00:00.000Z`,
+              userId: rec.userId,
+              user: rec.user,
+              isRecurring: true,
+              isScheduled: true,
+              isSkipped: occ.isSkipped,
+              recurringId: rec.id,
+            });
           }
         }
+      }
 
         // 2. Project Expected Monthly Recurring Incomes for future months (e.g. Next Month)
         if (selectedMonth > currentMonthStr) {
@@ -344,7 +304,6 @@ export default function ExpensesPage() {
           }
         }
       }
-    }
 
     return combined.sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -407,15 +366,19 @@ export default function ExpensesPage() {
       .reduce((sum, t) => sum + t.amount, 0);
   }, [filteredTransactions]);
 
-  // 2. Scheduled Payments Total (Debit): All upcoming scheduled commitments in this month
+  // 2. Scheduled Payments Total (Debit): All upcoming scheduled commitments in this month (excluding skipped)
   const scheduledPaymentsTotal = useMemo(() => {
     return filteredTransactions
-      .filter((t) => t.type === 'EXPENSE' && t.isScheduled)
+      .filter((t) => t.type === 'EXPENSE' && t.isScheduled && !t.isSkipped)
       .reduce((sum, t) => sum + t.amount, 0);
   }, [filteredTransactions]);
 
   const scheduledPaymentsCount = useMemo(() => {
-    return filteredTransactions.filter((t) => t.type === 'EXPENSE' && t.isScheduled).length;
+    return filteredTransactions.filter((t) => t.type === 'EXPENSE' && t.isScheduled && !t.isSkipped).length;
+  }, [filteredTransactions]);
+
+  const skippedPaymentsCount = useMemo(() => {
+    return filteredTransactions.filter((t) => t.type === 'EXPENSE' && t.isScheduled && t.isSkipped).length;
   }, [filteredTransactions]);
 
   // 3. Actual Spent (Debit): Expenses already logged/paid
@@ -466,6 +429,65 @@ export default function ExpensesPage() {
         console.error(e);
         showFeedback('Failed to record income', 'warning');
       }
+    }
+  };
+
+  // Skip a scheduled occurrence (day or month)
+  const handleSkipOccurrence = async (t: UnifiedTransaction) => {
+    if (!t.recurringId) return;
+    const dateToSkip = t.date ? t.date.split('T')[0] : selectedMonth;
+    const formattedDate = format(new Date(t.date), 'MMMM yyyy');
+
+    if (!confirm(`Skip this scheduled payment for "${t.description}" (${formattedDate})?\n\nThis will exclude it from this month's debit totals.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/recurring/${t.recurringId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'skip_date',
+          date: dateToSkip,
+        }),
+      });
+
+      if (res.ok) {
+        showFeedback(`Skipped "${t.description}" for ${format(new Date(t.date), 'MMM yyyy')}`, 'info');
+        fetchTransactions();
+      } else {
+        showFeedback('Failed to skip commitment', 'warning');
+      }
+    } catch (err) {
+      console.error(err);
+      showFeedback('Error skipping commitment', 'warning');
+    }
+  };
+
+  // Restore / unskip a previously skipped occurrence
+  const handleUnskipOccurrence = async (t: UnifiedTransaction) => {
+    if (!t.recurringId) return;
+    const dateToUnskip = t.date ? t.date.split('T')[0] : selectedMonth;
+
+    try {
+      const res = await fetch(`/api/recurring/${t.recurringId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'unskip_date',
+          date: dateToUnskip,
+        }),
+      });
+
+      if (res.ok) {
+        showFeedback(`Restored "${t.description}" for ${format(new Date(t.date), 'MMM yyyy')}`, 'success');
+        fetchTransactions();
+      } else {
+        showFeedback('Failed to restore commitment', 'warning');
+      }
+    } catch (err) {
+      console.error(err);
+      showFeedback('Error restoring commitment', 'warning');
     }
   };
 
@@ -734,6 +756,9 @@ export default function ExpensesPage() {
               </div>
               <p className="text-[11px] text-slate-400 mt-1">
                 {scheduledPaymentsCount} recurring commitment{scheduledPaymentsCount === 1 ? '' : 's'} / EMIs scheduled
+                {skippedPaymentsCount > 0 && (
+                  <span className="text-amber-400/90 ml-1.5 font-medium">({skippedPaymentsCount} skipped)</span>
+                )}
               </p>
             </div>
           </div>
@@ -928,6 +953,7 @@ export default function ExpensesPage() {
               {filteredTransactions.map((t) => {
                 const isIncome = t.type === 'INCOME';
                 const isScheduled = Boolean(t.isScheduled);
+                const isSkipped = Boolean(t.isSkipped);
                 const isEmi =
                   t.category?.toLowerCase().includes('emi') ||
                   t.category?.toLowerCase().includes('loan') ||
@@ -937,7 +963,9 @@ export default function ExpensesPage() {
                   <div
                     key={`${t.type}-${t.id}`}
                     className={`p-4 sm:p-5 flex items-center justify-between gap-4 transition-colors ${
-                      isScheduled
+                      isSkipped
+                        ? 'bg-amber-950/10 hover:bg-amber-950/20 border-l-2 border-l-amber-500/70 opacity-80'
+                        : isScheduled
                         ? 'bg-cyan-950/15 hover:bg-cyan-950/25 border-l-2 border-l-cyan-500'
                         : 'hover:bg-slate-900/50'
                     }`}
@@ -947,14 +975,18 @@ export default function ExpensesPage() {
                       {/* Icon Circle */}
                       <div
                         className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 border ${
-                          isScheduled
+                          isSkipped
+                            ? 'bg-amber-950/60 border-amber-800/80 text-amber-400'
+                            : isScheduled
                             ? 'bg-cyan-950/80 border-cyan-700/80 text-cyan-400'
                             : isIncome
                             ? 'bg-emerald-950/60 border-emerald-800/80 text-emerald-400'
                             : 'bg-rose-950/60 border-rose-800/80 text-rose-400'
                         }`}
                       >
-                        {isScheduled ? (
+                        {isSkipped ? (
+                          <RotateCcw className="w-5 h-5 text-amber-400" />
+                        ) : isScheduled ? (
                           <CalendarClock className="w-5 h-5 text-cyan-400" />
                         ) : isIncome ? (
                           <ArrowUpRight className="w-5 h-5" />
@@ -969,8 +1001,16 @@ export default function ExpensesPage() {
                             {t.description}
                           </p>
 
+                          {/* Skipped Badge */}
+                          {isSkipped && (
+                            <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                              <RotateCcw className="w-3 h-3" />
+                              <span>Skipped (Excluded from total)</span>
+                            </span>
+                          )}
+
                           {/* Scheduled Badge */}
-                          {isScheduled && (
+                          {isScheduled && !isSkipped && (
                             <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1">
                               <CalendarClock className="w-3 h-3" />
                               <span>Scheduled / Due</span>
@@ -1015,7 +1055,7 @@ export default function ExpensesPage() {
 
                         {/* Date & Notes */}
                         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-                          <span className={isScheduled ? 'text-cyan-300 font-semibold' : ''}>
+                          <span className={isScheduled ? (isSkipped ? 'text-amber-400 font-semibold line-through' : 'text-cyan-300 font-semibold') : ''}>
                             {format(new Date(t.date), 'MMMM d, yyyy')}
                           </span>
                           {t.notes && (
@@ -1040,23 +1080,49 @@ export default function ExpensesPage() {
                     <div className="flex items-center gap-3 shrink-0">
                       <span
                         className={`text-base sm:text-lg font-black tracking-tight ${
-                          isIncome ? 'text-emerald-400' : 'text-rose-400'
+                          isSkipped
+                            ? 'line-through text-slate-500'
+                            : isIncome
+                            ? 'text-emerald-400'
+                            : 'text-rose-400'
                         }`}
                       >
                         {isIncome ? '+' : '-'}{currency}
                         {t.amount.toLocaleString('en-IN')}
                       </span>
 
-                      {/* Action buttons: Record Now for scheduled vs Delete for logged */}
+                      {/* Action buttons: Record Now / Skip / Restore for scheduled vs Delete for logged */}
                       {isScheduled ? (
-                        <button
-                          onClick={() => handlePayScheduled(t)}
-                          className="px-3 py-1.5 text-xs font-semibold bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 rounded-xl flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
-                          title="Record this scheduled transaction"
-                        >
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          <span>Record Now</span>
-                        </button>
+                        isSkipped ? (
+                          <button
+                            onClick={() => handleUnskipOccurrence(t)}
+                            className="px-3 py-1.5 text-xs font-semibold bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/40 rounded-xl flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
+                            title="Restore this skipped payment"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            <span>Restore</span>
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handlePayScheduled(t)}
+                              className="px-3 py-1.5 text-xs font-semibold bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 rounded-xl flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
+                              title="Record this scheduled transaction"
+                            >
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              <span>Record Now</span>
+                            </button>
+                            {t.type === 'EXPENSE' && t.recurringId && (
+                              <button
+                                onClick={() => handleSkipOccurrence(t)}
+                                className="px-2.5 py-1.5 text-xs font-semibold bg-slate-800/80 hover:bg-amber-950/40 text-slate-400 hover:text-amber-300 border border-slate-700 hover:border-amber-600/40 rounded-xl flex items-center gap-1 transition-all active:scale-95 shadow-sm"
+                                title="Skip this payment for this month"
+                              >
+                                <span>Skip</span>
+                              </button>
+                            )}
+                          </div>
+                        )
                       ) : (
                         (currentUser.role === 'ADMIN' || t.userId === currentUser.id) && (
                           <button

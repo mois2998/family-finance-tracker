@@ -21,6 +21,7 @@ import {
 import { format } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
 import { useFeedback } from '@/context/FeedbackContext';
+import { parseSkippedDates } from '@/lib/forecasting';
 
 export default function RecurringPage() {
   const router = useRouter();
@@ -199,6 +200,44 @@ export default function RecurringPage() {
     } catch (e) {
       console.error(e);
       showFeedback('Error reactivating', 'warning');
+    }
+  };
+
+  const handleUnskipDate = async (recId: string, dateStr: string) => {
+    try {
+      const res = await fetch(`/api/recurring/${recId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'unskip_date', date: dateStr }),
+      });
+      if (res.ok) {
+        showFeedback(`Restored ${dateStr}`, 'success');
+        fetchData();
+      } else {
+        showFeedback('Failed to restore date', 'warning');
+      }
+    } catch {
+      showFeedback('Failed to restore date', 'warning');
+    }
+  };
+
+  const handleSkipNextDue = async (rec: any) => {
+    const nextDueStr = format(new Date(rec.nextDueDate), 'yyyy-MM-dd');
+    if (!confirm(`Skip the upcoming payment on ${nextDueStr} for "${rec.name}"?\n\nIt will not count into upcoming totals.`)) return;
+    try {
+      const res = await fetch(`/api/recurring/${rec.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'skip_date', date: nextDueStr }),
+      });
+      if (res.ok) {
+        showFeedback(`Skipped payment for ${nextDueStr}`, 'info');
+        fetchData();
+      } else {
+        showFeedback('Failed to skip payment', 'warning');
+      }
+    } catch {
+      showFeedback('Failed to skip payment', 'warning');
     }
   };
 
@@ -574,6 +613,14 @@ export default function RecurringPage() {
                           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
                             <span>{rec.category}</span>
                             <span>•</span>
+                            {rec.startDate && (
+                              <>
+                                <span className="text-slate-300 font-medium">
+                                  Started: {format(new Date(rec.startDate), 'MMM d, yyyy')}
+                                </span>
+                                <span>•</span>
+                              </>
+                            )}
                             {rec.isActive !== false ? (
                               <span className="text-amber-400 font-medium">
                                 Next Due: {format(nextDueDate, 'MMMM d, yyyy')}
@@ -590,6 +637,29 @@ export default function RecurringPage() {
                               </>
                             )}
                           </div>
+
+                          {/* Skipped dates badges if any */}
+                          {rec.skippedDates && parseSkippedDates(rec.skippedDates).length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                              <span className="text-[11px] text-amber-400/90 font-medium">Skipped:</span>
+                              {parseSkippedDates(rec.skippedDates).map((sDate: string) => (
+                                <span
+                                  key={sDate}
+                                  className="text-[10px] bg-amber-950/60 border border-amber-800/60 text-amber-300 px-2 py-0.5 rounded-full flex items-center gap-1"
+                                >
+                                  <span>{sDate}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUnskipDate(rec.id, sDate)}
+                                    className="hover:text-white font-bold ml-0.5 text-xs text-amber-400"
+                                    title={`Restore ${sDate}`}
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-800">
@@ -613,6 +683,15 @@ export default function RecurringPage() {
                                 >
                                   <CheckCircle className="w-3.5 h-3.5" />
                                   <span>Mark Paid</span>
+                                </button>
+
+                                {/* Skip Next Due Button */}
+                                <button
+                                  onClick={() => handleSkipNextDue(rec)}
+                                  className="px-2.5 py-1.5 text-xs font-semibold bg-slate-800/80 hover:bg-amber-950/40 text-slate-400 hover:text-amber-300 border border-slate-700 hover:border-amber-600/40 rounded-xl flex items-center gap-1 transition-all active:scale-95"
+                                  title="Skip the upcoming due date"
+                                >
+                                  <span>Skip Due</span>
                                 </button>
 
                                 {/* Direct Mark Completed Button */}
