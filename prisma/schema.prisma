@@ -23,6 +23,7 @@ model Household {
   recurringExpenses RecurringExpense[]
   categoryBudgets   CategoryBudget[]
   savingsGoals      SavingsGoal[]
+  feedbacks         Feedback[]
 }
 
 model User {
@@ -39,6 +40,7 @@ model User {
   incomes           Income[]
   expenses          Expense[]
   recurringExpenses RecurringExpense[]
+  feedbacks         Feedback[]
 
   @@index([householdId])
 }
@@ -135,4 +137,27 @@ model CategoryBudget {
   updatedAt    DateTime  @updatedAt
 
   @@unique([householdId, category])
+}
+
+model Feedback {
+  id          String    @id @default(uuid())
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String    @default("BUG") // "BUG", "FEATURE_REQUEST", "IMPROVEMENT", "GENERAL"
+  title       String?
+  message     String    @db.Text
+  screenshot  String?   @db.LongText
+  pageUrl     String?
+  deviceInfo  String?
+  status      String    @default("PENDING") // "PENDING", "IN_REVIEW", "RESOLVED", "DISMISSED"
+  adminNotes  String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([householdId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }
