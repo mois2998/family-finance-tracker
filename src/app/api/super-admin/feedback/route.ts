@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSuperAdminSessionFromRequest } from '@/lib/superAuth';
+import { ensureFeedbackTable } from '@/lib/feedbackHelper';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,9 @@ export async function GET(req: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized. Super admin only.' }, { status: 401 });
     }
+
+    // Auto-create table in remote DB if not yet existing
+    await ensureFeedbackTable();
 
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');

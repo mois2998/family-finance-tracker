@@ -15,6 +15,7 @@ import {
   Loader2,
   CheckCircle2,
   Image as ImageIcon,
+  AlertCircle,
 } from 'lucide-react';
 import { useFeedback } from '@/context/FeedbackContext';
 
@@ -32,6 +33,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -44,6 +46,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
       setScreenshot(null);
       setSubmitting(false);
       setSubmitted(false);
+      setFormError(null);
     }
   }, [isOpen]);
 
@@ -119,10 +122,12 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
     }
 
     setSubmitting(true);
+    setFormError(null);
     try {
       const res = await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           type,
           title: title.trim() || undefined,
@@ -141,10 +146,14 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
         }, 1500);
       } else {
         const data = await res.json();
-        showFeedback(data.error || 'Failed to submit feedback', 'warning');
+        const err = data.error || 'Failed to submit feedback';
+        setFormError(err);
+        showFeedback(err, 'warning');
       }
-    } catch {
-      showFeedback('Network error. Please try again.', 'warning');
+    } catch (e: any) {
+      const netErr = e?.message || 'Network error. Please try again.';
+      setFormError(netErr);
+      showFeedback(netErr, 'warning');
     } finally {
       setSubmitting(false);
     }
@@ -188,6 +197,13 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
+            {formError && (
+              <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                <span>{formError}</span>
+              </div>
+            )}
+
             {/* Feedback Type Selector */}
             <div>
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
