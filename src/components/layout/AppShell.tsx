@@ -255,12 +255,22 @@ export default function AppShell({
             </div>
           )}
 
-          {/* Right Header items: Feedback, Quick Add, Prominent Logout */}
+          {/* Right Header items: User Guide, Feedback, Quick Add, Prominent Logout */}
           <div className="flex items-center gap-2">
+            {/* User Guide Link */}
+            <Link
+              href="/guide"
+              className="flex items-center gap-1.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shadow-sm"
+              title="Open Platform User Guide"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Guide</span>
+            </Link>
+
             {/* Feedback Button */}
             <button
               onClick={() => setIsFeedbackModalOpen(true)}
-              className="flex items-center gap-1.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+              className="flex items-center gap-1.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shadow-sm"
               title="Share feedback or report an issue"
             >
               <MessageSquarePlus className="w-3.5 h-3.5 text-indigo-400" />
