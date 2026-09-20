@@ -19,11 +19,29 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
+    const identifier = email.trim();
+
     try {
+      // Direct Super Admin login support
+      if (identifier.toLowerCase() === 'super') {
+        const adminRes = await fetch('/api/super-admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: identifier, password }),
+        });
+
+        const adminData = await adminRes.json();
+        if (!adminRes.ok) throw new Error(adminData.error || 'Super admin authentication failed');
+
+        router.push('/super-admin');
+        return;
+      }
+
+      // Normal Family Member login
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: identifier, password }),
       });
 
       const data = await res.json();
@@ -59,7 +77,7 @@ export default function LoginPage() {
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <LogIn className="w-5 h-5 text-indigo-400" /> Sign In
             </h2>
-            <span className="text-xs text-slate-400">Family Member Login</span>
+            <span className="text-xs text-slate-400">Family Member / Admin</span>
           </div>
 
           {error && (
@@ -71,12 +89,13 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                Email Address
+                Email Address or Admin Username
               </label>
               <input
-                type="email"
+                type="text"
                 required
-                placeholder="you@family.com"
+                autoCapitalize="none"
+                placeholder="you@family.com or super"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
@@ -100,9 +119,9 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 cursor-pointer"
             >
-              <span>{loading ? 'Authenticating...' : 'Sign In to Household'}</span>
+              <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
@@ -115,10 +134,18 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Info Pill */}
-        <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
-          <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
-          <span>Secure multi-user session with encrypted passwords</span>
+        {/* Info Pill & Super Admin Portal Link */}
+        <div className="flex flex-col items-center gap-2 text-xs text-slate-500">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Secure multi-user session with encrypted passwords</span>
+          </div>
+          <Link
+            href="/super-admin/login"
+            className="text-[11px] text-slate-500 hover:text-indigo-400 transition-colors inline-flex items-center gap-1 underline underline-offset-4"
+          >
+            Go to Dedicated Super Admin Portal →
+          </Link>
         </div>
       </div>
     </div>
