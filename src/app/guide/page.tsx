@@ -273,7 +273,7 @@ export default function UserGuidePage() {
                   <ol className="space-y-2.5 text-xs text-slate-300 list-decimal list-inside pl-1">
                     <li>
                       <strong>Create or Join:</strong> Register your account, then either create a new
-                      Household or enter your family's 6-character Invite Code.
+                      Household or enter your family&apos;s 6-character Invite Code.
                     </li>
                     <li>
                       <strong>Invite Members:</strong> Share the unique invite code with your spouse,
@@ -398,7 +398,7 @@ export default function UserGuidePage() {
                 <div className="space-y-4 text-sm text-slate-300 leading-relaxed">
                   <h3 className="text-base font-semibold text-white">Logging Expenses</h3>
                   <p>
-                    Navigate to the <strong>Expenses</strong> page to view the current month's transactions
+                    Navigate to the <strong>Expenses</strong> page to view the current month&apos;s transactions
                     or record a new entry.
                   </p>
 
@@ -471,7 +471,7 @@ export default function UserGuidePage() {
                     </p>
                     <ul className="space-y-1.5 text-xs text-slate-400 pl-4 list-disc">
                       <li>
-                        Months prior to the bill's start date are never erroneously charged or projected.
+                        Months prior to the bill&apos;s start date are never erroneously charged or projected.
                       </li>
                       <li>
                         If a loan starts on March 15, February will correctly show 0 EMI occurrences,
