@@ -33,7 +33,7 @@ export default function LoginPage() {
         const adminData = await adminRes.json();
         if (!adminRes.ok) throw new Error(adminData.error || 'Super admin authentication failed');
 
-        router.push('/super-admin');
+        window.location.href = '/super-admin';
         return;
       }
 
@@ -47,9 +47,10 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Login failed');
 
-      await refreshUser();
-      router.push('/');
-      router.refresh();
+      if (data.user && typeof window !== 'undefined') {
+        sessionStorage.setItem('family_finance_cached_user', JSON.stringify(data.user));
+      }
+      window.location.href = '/';
     } catch (err: any) {
       setError(err.message);
     } finally {

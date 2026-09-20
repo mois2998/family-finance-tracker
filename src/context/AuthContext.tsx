@@ -70,9 +70,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const effectiveViewMode = (user && user.role !== 'ADMIN') ? 'personal' : viewMode;
 
-  const isPublicRoute = pathname === '/login' || pathname === '/register';
+  const isSuperAdminRoute = pathname?.startsWith('/super-admin');
+  const isPublicRoute =
+    pathname === '/login' ||
+    pathname === '/register' ||
+    isSuperAdminRoute ||
+    pathname === '/guide';
 
   const fetchSession = useCallback(async (isInitial = false) => {
+    // If on a super admin portal route, skip tenant household auth checks
+    if (pathname?.startsWith('/super-admin')) {
+      setLoading(false);
+      return;
+    }
+
     try {
       // Check session storage first for instant non-blocking hydration
       if (isInitial && typeof window !== 'undefined') {
@@ -88,7 +99,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const res = await fetch('/api/auth/me');
+      const res = await fetch('/api/auth/me', {
+        cache: 'no-store',
+      });
+
       if (res.ok) {
         const data = await res.json();
         if (data.authenticated && data.user) {
@@ -106,6 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
       } else {
+        // If not authenticated
         setUser(null);
         if (typeof window !== 'undefined') {
           sessionStorage.removeItem(STORAGE_KEY);
@@ -122,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [isPublicRoute, router]);
+  }, [isPublicRoute, pathname, router]);
 
   useEffect(() => {
     fetchSession(true);

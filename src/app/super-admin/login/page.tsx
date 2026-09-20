@@ -33,7 +33,7 @@ export default function SuperAdminLoginPage() {
         throw new Error(data.error || 'Authentication failed');
       }
 
-      router.push('/super-admin');
+      window.location.href = '/super-admin';
     } catch (err: any) {
       setError(err.message || 'Failed to authenticate');
     } finally {
