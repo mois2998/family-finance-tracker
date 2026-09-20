@@ -81,6 +81,7 @@ export default function SuperAdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unauthorized, setUnauthorized] = useState(false);
 
   // Filters
   const [filterHousehold, setFilterHousehold] = useState('ALL');
@@ -106,11 +107,16 @@ export default function SuperAdminDashboardPage() {
       if (filterStatus !== 'ALL') params.set('status', filterStatus);
       if (filterType !== 'ALL') params.set('type', filterType);
 
-      const res = await fetch(`/api/super-admin/feedback?${params.toString()}`);
+      const res = await fetch(`/api/super-admin/feedback?${params.toString()}`, {
+        cache: 'no-store',
+        credentials: 'include',
+      });
       if (res.status === 401) {
-        router.push('/super-admin/login');
+        setUnauthorized(true);
+        setLoading(false);
         return;
       }
+      setUnauthorized(false);
 
       if (!res.ok) {
         throw new Error('Failed to load feedback records');
@@ -134,7 +140,7 @@ export default function SuperAdminDashboardPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [filterHousehold, filterStatus, filterType, router]);
+  }, [filterHousehold, filterStatus, filterType]);
 
   useEffect(() => {
     fetchFeedbacks();
@@ -271,6 +277,40 @@ export default function SuperAdminDashboardPage() {
         return 'bg-slate-500/10 text-slate-400 border-slate-500/30';
     }
   };
+
+  if (unauthorized) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-8 max-w-md w-full text-center space-y-4 shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mx-auto text-rose-400">
+            <ShieldCheck className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Super Admin Session Required</h2>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            Your session may have expired or credentials are required. Please sign in to access the multi-tenant control panel.
+          </p>
+          <div className="pt-2 flex flex-col gap-2">
+            <a
+              href="/super-admin/login"
+              className="py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow transition-colors"
+            >
+              Sign In to Super Admin
+            </a>
+            <button
+              onClick={() => {
+                setUnauthorized(false);
+                setLoading(true);
+                fetchFeedbacks(true);
+              }}
+              className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl transition-colors cursor-pointer"
+            >
+              Retry Connection
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">

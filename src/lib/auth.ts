@@ -61,7 +61,25 @@ export async function getSession(): Promise<SessionUser | null> {
  * Get session user from NextRequest (for API routes or middleware)
  */
 export async function getSessionFromRequest(req: NextRequest): Promise<SessionUser | null> {
-  const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+  // 1. Try NextRequest cookies
+  let token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+
+  // 2. Try next/headers cookies() store
+  if (!token) {
+    try {
+      token = cookies().get(SESSION_COOKIE_NAME)?.value;
+    } catch {}
+  }
+
+  // 3. Try raw Cookie header parsing
+  if (!token) {
+    const cookieHeader = req.headers.get('cookie') || '';
+    const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${SESSION_COOKIE_NAME}=([^;]*)`));
+    if (match) {
+      token = decodeURIComponent(match[1]);
+    }
+  }
+
   if (!token) return null;
   return verifySessionToken(token);
 }
@@ -70,8 +88,20 @@ export async function getSessionFromRequest(req: NextRequest): Promise<SessionUs
  * Set session cookie in NextResponse
  */
 export function setSessionCookie(response: NextResponse, token: string): void {
-  // Check if secure is needed (production or accessed via https/ngrok)
   const isSecure = process.env.NODE_ENV === 'production';
+
+  try {
+    cookies().set({
+      name: SESSION_COOKIE_NAME,
+      value: token,
+      httpOnly: true,
+      path: '/',
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+      sameSite: 'lax',
+      secure: isSecure,
+    });
+  } catch {}
+
   response.cookies.set({
     name: SESSION_COOKIE_NAME,
     value: token,
@@ -87,6 +117,21 @@ export function setSessionCookie(response: NextResponse, token: string): void {
  * Remove session cookie
  */
 export function clearSessionCookie(response: NextResponse): void {
+  const isSecure = process.env.NODE_ENV === 'production';
+
+  try {
+    cookies().set({
+      name: SESSION_COOKIE_NAME,
+      value: '',
+      httpOnly: true,
+      path: '/',
+      maxAge: 0,
+      expires: new Date(0),
+      sameSite: 'lax',
+      secure: isSecure,
+    });
+  } catch {}
+
   response.cookies.set({
     name: SESSION_COOKIE_NAME,
     value: '',
@@ -95,6 +140,7 @@ export function clearSessionCookie(response: NextResponse): void {
     maxAge: 0,
     expires: new Date(0),
     sameSite: 'lax',
+    secure: isSecure,
   });
 }
 

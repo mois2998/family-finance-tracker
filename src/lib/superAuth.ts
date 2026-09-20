@@ -54,17 +54,51 @@ export async function getSuperAdminSession(): Promise<SuperAdminSession | null> 
 export async function getSuperAdminSessionFromRequest(
   req: NextRequest
 ): Promise<SuperAdminSession | null> {
-  const token = req.cookies.get(SUPER_ADMIN_COOKIE_NAME)?.value;
+  // 1. Try NextRequest cookies
+  let token = req.cookies.get(SUPER_ADMIN_COOKIE_NAME)?.value;
+
+  // 2. Try next/headers cookies() store
+  if (!token) {
+    try {
+      token = cookies().get(SUPER_ADMIN_COOKIE_NAME)?.value;
+    } catch {}
+  }
+
+  // 3. Try raw Cookie header parsing
+  if (!token) {
+    const cookieHeader = req.headers.get('cookie') || '';
+    const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${SUPER_ADMIN_COOKIE_NAME}=([^;]*)`));
+    if (match) {
+      token = decodeURIComponent(match[1]);
+    }
+  }
+
   if (!token) return null;
   return verifySuperAdminToken(token);
 }
 
 export function setSuperAdminCookie(res: NextResponse, token: string): void {
+  const isSecure = process.env.NODE_ENV === 'production';
+
+  // Set via next/headers store if available
+  try {
+    cookies().set({
+      name: SUPER_ADMIN_COOKIE_NAME,
+      value: token,
+      httpOnly: true,
+      secure: isSecure,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+    });
+  } catch {}
+
+  // Set on response headers
   res.cookies.set({
     name: SUPER_ADMIN_COOKIE_NAME,
     value: token,
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecure,
     sameSite: 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60, // 7 days
@@ -72,11 +106,25 @@ export function setSuperAdminCookie(res: NextResponse, token: string): void {
 }
 
 export function clearSuperAdminCookie(res: NextResponse): void {
+  const isSecure = process.env.NODE_ENV === 'production';
+
+  try {
+    cookies().set({
+      name: SUPER_ADMIN_COOKIE_NAME,
+      value: '',
+      httpOnly: true,
+      secure: isSecure,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 0,
+    });
+  } catch {}
+
   res.cookies.set({
     name: SUPER_ADMIN_COOKIE_NAME,
     value: '',
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecure,
     sameSite: 'lax',
     path: '/',
     maxAge: 0,

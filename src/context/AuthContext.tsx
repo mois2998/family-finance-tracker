@@ -101,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const res = await fetch('/api/auth/me', {
         cache: 'no-store',
+        credentials: 'include',
       });
 
       if (res.ok) {
@@ -119,8 +120,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             router.push('/login');
           }
         }
-      } else {
-        // If not authenticated
+      } else if (res.status === 401) {
+        // Specifically 401 Unauthorized
         setUser(null);
         if (typeof window !== 'undefined') {
           sessionStorage.removeItem(STORAGE_KEY);
@@ -128,12 +129,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!isPublicRoute) {
           router.push('/login');
         }
+      } else {
+        // For temporary server/network issues, keep existing user state if available
+        console.warn('Session check returned status:', res.status);
       }
-    } catch {
-      setUser(null);
-      if (!isPublicRoute) {
-        router.push('/login');
-      }
+    } catch (e) {
+      console.warn('Session fetch failed:', e);
     } finally {
       setLoading(false);
     }
