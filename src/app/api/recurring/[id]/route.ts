@@ -250,11 +250,31 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
     }
 
+    // 1. Delete all associated logged transaction entries for this bill
+    const deletedExpenses = await prisma.expense.deleteMany({
+      where: {
+        householdId: session.householdId,
+        OR: [
+          { recurringExpenseId: id },
+          {
+            isRecurring: true,
+            description: { contains: existing.name },
+            userId: existing.userId,
+          },
+        ],
+      },
+    });
+
+    // 2. Delete the recurring bill itself
     await prisma.recurringExpense.delete({
       where: { id },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      message: 'Recurring bill and all associated transactions deleted',
+      deletedTransactionsCount: deletedExpenses.count,
+    });
   } catch (err: any) {
     console.error('Error deleting recurring expense:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

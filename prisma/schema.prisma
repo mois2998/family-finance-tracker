@@ -75,7 +75,7 @@ model Expense {
   description        String
   isRecurring        Boolean           @default(false)
   recurringExpenseId String?
-  recurringExpense   RecurringExpense? @relation(fields: [recurringExpenseId], references: [id], onDelete: SetNull)
+  recurringExpense   RecurringExpense? @relation(fields: [recurringExpenseId], references: [id], onDelete: Cascade)
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
 

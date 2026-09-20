@@ -241,15 +241,31 @@ export default function RecurringPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to stop tracking this recurring bill?')) return;
+  const handleDelete = async (rec: any) => {
+    if (
+      !confirm(
+        `Delete recurring bill "${rec.name}"?\n\n⚠️ This will permanently delete this recurring bill AND remove all of its logged transaction entries from your expenses ledger.`
+      )
+    ) {
+      return;
+    }
     try {
-      const res = await fetch(`/api/recurring/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/recurring/${rec.id}`, { method: 'DELETE' });
       if (res.ok) {
-        setRecurringExpenses((prev) => prev.filter((r) => r.id !== id));
+        const data = await res.json();
+        showFeedback(
+          data.deletedTransactionsCount > 0
+            ? `Deleted "${rec.name}" and removed ${data.deletedTransactionsCount} associated transaction(s)`
+            : `Deleted "${rec.name}"`,
+          'info'
+        );
+        setRecurringExpenses((prev) => prev.filter((r) => r.id !== rec.id));
+      } else {
+        showFeedback('Failed to delete bill', 'warning');
       }
     } catch (e) {
       console.error(e);
+      showFeedback('Error deleting bill', 'warning');
     }
   };
 
@@ -718,7 +734,7 @@ export default function RecurringPage() {
 
                             {(currentUser.role === 'ADMIN' || rec.userId === currentUser.id) && (
                               <button
-                                onClick={() => handleDelete(rec.id)}
+                                onClick={() => handleDelete(rec)}
                                 className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-950/30 rounded-lg transition-colors active:scale-90"
                                 title="Delete permanently"
                               >
