@@ -199,26 +199,26 @@ export default function AppShell({
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
         {/* Top Header Bar with Household vs Personal Switcher & Universal Logout */}
-        <header className="sticky top-0 z-30 bg-[#0d1322]/90 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+        <header className="sticky top-0 z-30 bg-[#0d1322]/90 backdrop-blur-md border-b border-slate-800/80 px-2.5 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-1.5 sm:gap-3 max-w-full">
           {/* Mobile Brand Title */}
-          <div className="flex items-center gap-2 md:hidden">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-sm text-white">
+          <div className="flex items-center gap-1.5 sm:gap-2 md:hidden shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-xs sm:text-sm text-white shrink-0">
               {user.currency || '₹'}
             </div>
-            <span className="font-bold text-sm tracking-tight text-white truncate max-w-[120px]">
+            <span className="font-bold text-xs sm:text-sm tracking-tight text-white truncate max-w-[70px] xs:max-w-[110px]">
               {user.householdName || 'Finance'}
             </span>
           </div>
 
           {/* Household vs Personal Switcher (Admin Only; Members always have Personal view) */}
           {isAdmin ? (
-            <div className="flex bg-slate-900/90 p-1 rounded-xl border border-slate-700/60 shadow-inner">
+            <div className="flex bg-slate-900/90 p-0.5 sm:p-1 rounded-xl border border-slate-700/60 shadow-inner shrink-0">
               <button
                 type="button"
                 onClick={() => handleSwitchView('household')}
-                className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all duration-150 active:scale-95 ${
+                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all duration-150 active:scale-95 ${
                   effectiveView === 'household'
                     ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-600/40 ring-1 ring-indigo-400/50 active-switcher-pill'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
@@ -226,7 +226,7 @@ export default function AppShell({
               >
                 <Users className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Household Combined View</span>
-                <span className="sm:hidden">Combined</span>
+                <span className="sm:hidden text-[11px]">Combined</span>
                 {effectiveView === 'household' && (
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
                 )}
@@ -234,7 +234,7 @@ export default function AppShell({
               <button
                 type="button"
                 onClick={() => handleSwitchView('personal')}
-                className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all duration-150 active:scale-95 ${
+                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all duration-150 active:scale-95 ${
                   effectiveView === 'personal'
                     ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-600/40 ring-1 ring-indigo-400/50 active-switcher-pill'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
@@ -242,56 +242,56 @@ export default function AppShell({
               >
                 <UserCheck className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">My Personal View</span>
-                <span className="sm:hidden">My View</span>
+                <span className="sm:hidden text-[11px]">My View</span>
                 {effectiveView === 'personal' && (
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
                 )}
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/80 border border-slate-800 rounded-xl text-xs font-medium text-slate-300">
+            <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-slate-900/80 border border-slate-800 rounded-xl text-xs font-medium text-slate-300 shrink-0">
               <UserCheck className="w-3.5 h-3.5 text-indigo-400" />
               <span>Personal View</span>
             </div>
           )}
 
-          {/* Right Header items: User Guide, Feedback, Quick Add, Prominent Logout */}
-          <div className="flex items-center gap-2">
+          {/* Right Header items: User Guide, Feedback, Quick Add (Desktop), Prominent Logout */}
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* User Guide Link */}
             <Link
               href="/guide"
-              className="flex items-center gap-1.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shadow-sm"
+              className="flex items-center gap-1 sm:gap-1.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white px-2 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shadow-sm"
               title="Open Platform User Guide"
             >
               <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Guide</span>
+              <span className="hidden xs:inline">Guide</span>
             </Link>
 
             {/* Feedback Button */}
             <button
               onClick={() => setIsFeedbackModalOpen(true)}
-              className="flex items-center gap-1.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shadow-sm"
+              className="flex items-center gap-1 sm:gap-1.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white px-2 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shadow-sm"
               title="Share feedback or report an issue"
             >
               <MessageSquarePlus className="w-3.5 h-3.5 text-indigo-400" />
               <span className="hidden sm:inline">Feedback</span>
             </button>
 
-            {/* Quick Add */}
+            {/* Quick Add (Visible on Desktop; Mobile uses center bottom button) */}
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+              className="hidden sm:flex items-center gap-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Add</span>
+              <span>Add</span>
             </button>
 
-            {/* Prominent Universal Sign Out Button (Visible on both Mobile & Desktop) */}
+            {/* Prominent Universal Sign Out Button */}
             <button
               onClick={handleLogout}
               disabled={loggingOut}
               title="Sign Out of your account"
-              className="flex items-center gap-1.5 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/60 text-rose-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-sm"
+              className="flex items-center gap-1 sm:gap-1.5 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/60 text-rose-300 hover:text-white px-2 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-sm"
             >
               <LogOut className="w-3.5 h-3.5 text-rose-400" />
               <span className="hidden sm:inline">{loggingOut ? 'Signing out...' : 'Sign Out'}</span>
@@ -299,7 +299,7 @@ export default function AppShell({
 
             {/* User Initials Badge */}
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs text-white shrink-0"
               style={{ backgroundColor: user.avatarColor || '#6366f1' }}
               title={`${user.name} (${user.role})`}
             >
@@ -309,7 +309,7 @@ export default function AppShell({
         </header>
 
         {/* Page Children */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">{children}</main>
+        <main className="flex-1 p-3 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto overflow-x-hidden">{children}</main>
       </div>
 
       {/* Mobile Bottom Navigation Bar with Next.js Links for instant SPA switches */}

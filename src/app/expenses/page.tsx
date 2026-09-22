@@ -589,34 +589,34 @@ export default function ExpensesPage() {
         {/* ========================================================================= */}
         {/* Month & Period Navigator Bar */}
         {/* ========================================================================= */}
-        <div className="bg-[#0f172a]/95 border border-slate-800 p-4 rounded-2xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="bg-[#0f172a]/95 border border-slate-800 p-3 sm:p-4 rounded-2xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4">
           {/* Left: Previous / Next Month Navigation */}
-          <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+          <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto justify-between md:justify-start">
             <button
               onClick={handlePrevMonth}
-              className="p-2 rounded-xl bg-slate-900 border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 transition-all shadow"
+              className="p-1.5 sm:p-2 rounded-xl bg-slate-900 border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 transition-all shadow shrink-0"
               title="Previous Month"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
-            <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-indigo-400" />
-              <span className="text-base sm:text-lg font-black text-white tracking-tight">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-wrap justify-center">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400 shrink-0" />
+              <span className="text-sm sm:text-lg font-black text-white tracking-tight truncate">
                 {isAllTime
                   ? 'All Time (Full Ledger)'
                   : format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}
               </span>
 
               {!isAllTime && selectedMonth === currentMonthStr && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+                <span className="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shrink-0">
                   This Month
                 </span>
               )}
 
               {!isAllTime && selectedMonth === nextMonthStr && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-cyan-400" />
+                <span className="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1 shrink-0">
+                  <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-cyan-400" />
                   <span>Next Month</span>
                 </span>
               )}
@@ -624,22 +624,22 @@ export default function ExpensesPage() {
 
             <button
               onClick={handleNextMonth}
-              className="p-2 rounded-xl bg-slate-900 border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 transition-all shadow"
+              className="p-1.5 sm:p-2 rounded-xl bg-slate-900 border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 transition-all shadow shrink-0"
               title="Next Month"
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
 
           {/* Right: Quick Jump Chips & Month/Year Picker */}
-          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-center md:justify-end">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full md:w-auto justify-center md:justify-end">
             <button
               onClick={() => {
                 setSelectedMonth(lastMonthStr);
                 setIsAllTime(false);
                 showFeedback(`Switched to Last Month (${format(parseISO(`${lastMonthStr}-01`), 'MMM yyyy')})`, 'info');
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95 ${
+              className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold transition-all active:scale-95 ${
                 !isAllTime && selectedMonth === lastMonthStr
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-1 ring-indigo-400/40'
                   : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
@@ -654,7 +654,7 @@ export default function ExpensesPage() {
                 setIsAllTime(false);
                 showFeedback('Switched to This Month', 'info');
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95 ${
+              className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold transition-all active:scale-95 ${
                 !isAllTime && selectedMonth === currentMonthStr
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-1 ring-indigo-400/40'
                   : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
@@ -669,7 +669,7 @@ export default function ExpensesPage() {
                 setIsAllTime(false);
                 showFeedback(`Switched to Next Month (${format(parseISO(`${nextMonthStr}-01`), 'MMM yyyy')})`, 'info');
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95 ${
+              className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold transition-all active:scale-95 ${
                 !isAllTime && selectedMonth === nextMonthStr
                   ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/30 ring-1 ring-cyan-400/50'
                   : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
@@ -683,7 +683,7 @@ export default function ExpensesPage() {
                 setIsAllTime(true);
                 showFeedback('Viewing All Time transactions', 'info');
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95 ${
+              className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold transition-all active:scale-95 ${
                 isAllTime
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                   : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
@@ -703,7 +703,7 @@ export default function ExpensesPage() {
                   showFeedback(`Jumped to ${format(parseISO(`${e.target.value}-01`), 'MMMM yyyy')}`, 'info');
                 }
               }}
-              className="bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer shadow"
+              className="bg-slate-900 border border-slate-700 rounded-xl px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer shadow max-w-[130px] sm:max-w-none"
               title="Pick any month or year"
             />
           </div>
@@ -712,23 +712,23 @@ export default function ExpensesPage() {
         {/* ========================================================================= */}
         {/* Financial KPI Summary Cards (Requested by User) */}
         {/* ========================================================================= */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
           {/* Card 1: Total Income (Credit) */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-emerald-950/50 via-slate-900/90 to-[#0b1329] border border-emerald-500/30 p-4 rounded-2xl shadow-xl hover:border-emerald-500/50 transition-all">
+          <div className="relative overflow-hidden bg-gradient-to-br from-emerald-950/50 via-slate-900/90 to-[#0b1329] border border-emerald-500/30 p-3.5 sm:p-4 rounded-2xl shadow-xl hover:border-emerald-500/50 transition-all min-w-0">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-                <span>Total Income (Credit)</span>
+              <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 truncate">
+                <ArrowUpRight className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="truncate">Total Income (Credit)</span>
               </span>
-              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/40">
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/40 shrink-0">
                 Inflow
               </span>
             </div>
             <div className="mt-2.5">
-              <div className="text-2xl sm:text-3xl font-black text-emerald-400 tracking-tight">
+              <div className="text-xl sm:text-2xl lg:text-3xl font-black text-emerald-400 tracking-tight truncate">
                 +{currency}{totalIncome.toLocaleString('en-IN')}
               </div>
-              <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5 flex-wrap">
+              <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5 flex-wrap break-words">
                 {actualIncome > 0 && <span>Received: {currency}{actualIncome.toLocaleString('en-IN')}</span>}
                 {actualIncome > 0 && scheduledIncome > 0 && <span>•</span>}
                 {scheduledIncome > 0 && (
@@ -740,21 +740,21 @@ export default function ExpensesPage() {
           </div>
 
           {/* Card 2: Scheduled Payments Total (Debit) */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-amber-950/40 via-slate-900/90 to-[#0b1329] border border-amber-500/30 p-4 rounded-2xl shadow-xl hover:border-amber-500/50 transition-all">
+          <div className="relative overflow-hidden bg-gradient-to-br from-amber-950/40 via-slate-900/90 to-[#0b1329] border border-amber-500/30 p-3.5 sm:p-4 rounded-2xl shadow-xl hover:border-amber-500/50 transition-all min-w-0">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                <CalendarClock className="w-4 h-4 text-amber-400" />
-                <span>Scheduled Payments (Debit)</span>
+              <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5 truncate">
+                <CalendarClock className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="truncate">Scheduled Payments (Debit)</span>
               </span>
-              <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-500/40">
+              <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-500/40 shrink-0">
                 Upcoming
               </span>
             </div>
             <div className="mt-2.5">
-              <div className="text-2xl sm:text-3xl font-black text-amber-400 tracking-tight">
+              <div className="text-xl sm:text-2xl lg:text-3xl font-black text-amber-400 tracking-tight truncate">
                 -{currency}{scheduledPaymentsTotal.toLocaleString('en-IN')}
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">
+              <p className="text-[11px] text-slate-400 mt-1 break-words">
                 {scheduledPaymentsCount} recurring commitment{scheduledPaymentsCount === 1 ? '' : 's'} / EMIs scheduled
                 {skippedPaymentsCount > 0 && (
                   <span className="text-amber-400/90 ml-1.5 font-medium">({skippedPaymentsCount} skipped)</span>
@@ -764,34 +764,34 @@ export default function ExpensesPage() {
           </div>
 
           {/* Card 3: Actual Spent (Debit) */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-rose-950/40 via-slate-900/90 to-[#0b1329] border border-rose-500/30 p-4 rounded-2xl shadow-xl hover:border-rose-500/50 transition-all">
+          <div className="relative overflow-hidden bg-gradient-to-br from-rose-950/40 via-slate-900/90 to-[#0b1329] border border-rose-500/30 p-3.5 sm:p-4 rounded-2xl shadow-xl hover:border-rose-500/50 transition-all min-w-0">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
-                <ArrowDownLeft className="w-4 h-4 text-rose-400" />
-                <span>Actual Spent (Debit)</span>
+              <span className="text-[11px] font-black uppercase tracking-wider text-rose-400 flex items-center gap-1.5 truncate">
+                <ArrowDownLeft className="w-4 h-4 text-rose-400 shrink-0" />
+                <span className="truncate">Actual Spent (Debit)</span>
               </span>
-              <span className="text-[10px] bg-rose-500/20 text-rose-300 font-bold px-2 py-0.5 rounded-full border border-rose-500/40">
+              <span className="text-[10px] bg-rose-500/20 text-rose-300 font-bold px-2 py-0.5 rounded-full border border-rose-500/40 shrink-0">
                 Logged Outflow
               </span>
             </div>
             <div className="mt-2.5">
-              <div className="text-2xl sm:text-3xl font-black text-rose-400 tracking-tight">
+              <div className="text-xl sm:text-2xl lg:text-3xl font-black text-rose-400 tracking-tight truncate">
                 -{currency}{actualSpentTotal.toLocaleString('en-IN')}
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">
+              <p className="text-[11px] text-slate-400 mt-1 break-words">
                 {actualSpentCount} expense transaction{actualSpentCount === 1 ? '' : 's'} logged
               </p>
             </div>
           </div>
 
           {/* Card 4: Projected Net Savings */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-950/50 via-slate-900/90 to-[#0b1329] border border-indigo-500/30 p-4 rounded-2xl shadow-xl hover:border-indigo-500/50 transition-all">
+          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-950/50 via-slate-900/90 to-[#0b1329] border border-indigo-500/30 p-3.5 sm:p-4 rounded-2xl shadow-xl hover:border-indigo-500/50 transition-all min-w-0">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
-                <Wallet className="w-4 h-4 text-indigo-400" />
-                <span>Projected Net Balance</span>
+              <span className="text-[11px] font-black uppercase tracking-wider text-indigo-300 flex items-center gap-1.5 truncate">
+                <Wallet className="w-4 h-4 text-indigo-400 shrink-0" />
+                <span className="truncate">Projected Net Balance</span>
               </span>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
                 projectedNetBalance >= 0
                   ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                   : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
@@ -800,12 +800,12 @@ export default function ExpensesPage() {
               </span>
             </div>
             <div className="mt-2.5">
-              <div className={`text-2xl sm:text-3xl font-black tracking-tight ${
+              <div className={`text-xl sm:text-2xl lg:text-3xl font-black tracking-tight truncate ${
                 projectedNetBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'
               }`}>
                 {projectedNetBalance >= 0 ? '+' : ''}{currency}{projectedNetBalance.toLocaleString('en-IN')}
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">
+              <p className="text-[11px] text-slate-400 mt-1 break-words">
                 Income − (Spent + Scheduled)
               </p>
             </div>
@@ -813,76 +813,81 @@ export default function ExpensesPage() {
         </div>
 
         {/* Filter Controls Bar */}
-        <div className="space-y-3 bg-[#0f172a]/90 p-4 rounded-2xl border border-slate-800 shadow-lg">
+        <div className="space-y-3 bg-[#0f172a]/90 p-3 sm:p-4 rounded-2xl border border-slate-800 shadow-lg">
           {/* Top Filter Row: Added vs Deducted Switcher Tabs */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
-            <div className="flex bg-slate-900/90 p-1 rounded-xl border border-slate-700/60 text-xs">
-              <button
-                type="button"
-                onClick={() => handleTypeFilter('ALL')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-bold transition-all duration-150 active:scale-95 ${
-                  typeFilter === 'ALL'
-                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-600/40 ring-1 ring-indigo-400/50'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
-                }`}
-              >
-                <ArrowUpDown className="w-3.5 h-3.5" />
-                <span>All Transactions</span>
-                <span className="ml-1 text-[10px] bg-slate-800/90 px-1.5 py-0.5 rounded-full text-slate-300 font-semibold">
-                  {allTransactions.length}
-                </span>
-                {typeFilter === 'ALL' && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
-                )}
-              </button>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+            <div className="w-full sm:w-auto overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+              <div className="inline-flex bg-slate-900/90 p-1 rounded-xl border border-slate-700/60 text-xs shrink-0 max-w-full">
+                <button
+                  type="button"
+                  onClick={() => handleTypeFilter('ALL')}
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg font-bold transition-all duration-150 active:scale-95 shrink-0 ${
+                    typeFilter === 'ALL'
+                      ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-600/40 ring-1 ring-indigo-400/50'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+                  }`}
+                >
+                  <ArrowUpDown className="w-3.5 h-3.5" />
+                  <span>All</span>
+                  <span className="hidden xs:inline">Transactions</span>
+                  <span className="ml-0.5 sm:ml-1 text-[9px] sm:text-[10px] bg-slate-800/90 px-1.5 py-0.5 rounded-full text-slate-300 font-semibold">
+                    {allTransactions.length}
+                  </span>
+                  {typeFilter === 'ALL' && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+                  )}
+                </button>
 
-              <button
-                type="button"
-                onClick={() => handleTypeFilter('DEDUCTED')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-bold transition-all duration-150 active:scale-95 ${
-                  typeFilter === 'DEDUCTED'
-                    ? 'bg-gradient-to-r from-rose-600 to-rose-700 text-white shadow-lg shadow-rose-600/40 ring-1 ring-rose-400/50'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
-                }`}
-              >
-                <ArrowDownLeft className="w-3.5 h-3.5" />
-                <span>Deductions (-)</span>
-                <span className="ml-1 text-[10px] bg-rose-950/90 border border-rose-800/60 px-1.5 py-0.5 rounded-full text-rose-300 font-semibold">
-                  {filteredTransactions.filter((t) => t.type === 'EXPENSE').length}
-                </span>
-                {typeFilter === 'DEDUCTED' && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-300 animate-pulse ml-0.5" />
-                )}
-              </button>
+                <button
+                  type="button"
+                  onClick={() => handleTypeFilter('DEDUCTED')}
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg font-bold transition-all duration-150 active:scale-95 shrink-0 ${
+                    typeFilter === 'DEDUCTED'
+                      ? 'bg-gradient-to-r from-rose-600 to-rose-700 text-white shadow-lg shadow-rose-600/40 ring-1 ring-rose-400/50'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+                  }`}
+                >
+                  <ArrowDownLeft className="w-3.5 h-3.5" />
+                  <span>Deductions</span>
+                  <span className="hidden xs:inline">(-)</span>
+                  <span className="ml-0.5 sm:ml-1 text-[9px] sm:text-[10px] bg-rose-950/90 border border-rose-800/60 px-1.5 py-0.5 rounded-full text-rose-300 font-semibold">
+                    {filteredTransactions.filter((t) => t.type === 'EXPENSE').length}
+                  </span>
+                  {typeFilter === 'DEDUCTED' && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-300 animate-pulse ml-0.5" />
+                  )}
+                </button>
 
-              <button
-                type="button"
-                onClick={() => handleTypeFilter('ADDED')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-bold transition-all duration-150 active:scale-95 ${
-                  typeFilter === 'ADDED'
-                    ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-600/40 ring-1 ring-emerald-400/50'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
-                }`}
-              >
-                <ArrowUpRight className="w-3.5 h-3.5" />
-                <span>Additions (+)</span>
-                <span className="ml-1 text-[10px] bg-emerald-950/90 border border-emerald-800/60 px-1.5 py-0.5 rounded-full text-emerald-300 font-semibold">
-                  {filteredTransactions.filter((t) => t.type === 'INCOME').length}
-                </span>
-                {typeFilter === 'ADDED' && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse ml-0.5" />
-                )}
-              </button>
+                <button
+                  type="button"
+                  onClick={() => handleTypeFilter('ADDED')}
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg font-bold transition-all duration-150 active:scale-95 shrink-0 ${
+                    typeFilter === 'ADDED'
+                      ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-600/40 ring-1 ring-emerald-400/50'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+                  }`}
+                >
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                  <span>Additions</span>
+                  <span className="hidden xs:inline">(+)</span>
+                  <span className="ml-0.5 sm:ml-1 text-[9px] sm:text-[10px] bg-emerald-950/90 border border-emerald-800/60 px-1.5 py-0.5 rounded-full text-emerald-300 font-semibold">
+                    {filteredTransactions.filter((t) => t.type === 'INCOME').length}
+                  </span>
+                  {typeFilter === 'ADDED' && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse ml-0.5" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Quick Count Info */}
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-slate-400 shrink-0 text-right sm:text-left">
               Showing <strong className="text-white">{filteredTransactions.length}</strong> of {allTransactions.length} entries
             </span>
           </div>
 
           {/* Bottom Filter Row: Search, Category, Member Selector */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
             {/* Search Input */}
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
@@ -962,7 +967,7 @@ export default function ExpensesPage() {
                 return (
                   <div
                     key={`${t.type}-${t.id}`}
-                    className={`p-4 sm:p-5 flex items-center justify-between gap-4 transition-colors ${
+                    className={`p-3.5 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-colors ${
                       isSkipped
                         ? 'bg-amber-950/10 hover:bg-amber-950/20 border-l-2 border-l-amber-500/70 opacity-80'
                         : isScheduled
@@ -970,8 +975,8 @@ export default function ExpensesPage() {
                         : 'hover:bg-slate-900/50'
                     }`}
                   >
-                    {/* Left Details */}
-                    <div className="flex items-start gap-3.5 min-w-0">
+                    {/* Top Row on Mobile & Left Section on Desktop */}
+                    <div className="flex items-start gap-3 min-w-0 w-full sm:w-auto flex-1">
                       {/* Icon Circle */}
                       <div
                         className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 border ${
@@ -985,41 +990,59 @@ export default function ExpensesPage() {
                         }`}
                       >
                         {isSkipped ? (
-                          <RotateCcw className="w-5 h-5 text-amber-400" />
+                          <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
                         ) : isScheduled ? (
-                          <CalendarClock className="w-5 h-5 text-cyan-400" />
+                          <CalendarClock className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
                         ) : isIncome ? (
-                          <ArrowUpRight className="w-5 h-5" />
+                          <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5" />
                         ) : (
-                          <ArrowDownLeft className="w-5 h-5" />
+                          <ArrowDownLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                         )}
                       </div>
 
-                      <div className="min-w-0 space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm sm:text-base font-semibold text-white truncate">
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        {/* Title + Amount (Mobile: amount aligns to right) */}
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm sm:text-base font-semibold text-white break-words sm:truncate leading-snug">
                             {t.description}
                           </p>
 
+                          {/* Mobile Amount (visible on < sm only) */}
+                          <span
+                            className={`sm:hidden text-sm sm:text-base font-black tracking-tight shrink-0 ${
+                              isSkipped
+                                ? 'line-through text-slate-500'
+                                : isIncome
+                                ? 'text-emerald-400'
+                                : 'text-rose-400'
+                            }`}
+                          >
+                            {isIncome ? '+' : '-'}{currency}{t.amount.toLocaleString('en-IN')}
+                          </span>
+                        </div>
+
+                        {/* Badges Container (Fluid wrap on all screens) */}
+                        <div className="flex flex-wrap items-center gap-1.5">
                           {/* Skipped Badge */}
                           {isSkipped && (
-                            <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                            <span className="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1 shrink-0">
                               <RotateCcw className="w-3 h-3" />
-                              <span>Skipped (Excluded from total)</span>
+                              <span className="hidden xs:inline">Skipped (Excluded from total)</span>
+                              <span className="xs:hidden">Skipped</span>
                             </span>
                           )}
 
                           {/* Scheduled Badge */}
                           {isScheduled && !isSkipped && (
-                            <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1">
+                            <span className="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1 shrink-0">
                               <CalendarClock className="w-3 h-3" />
-                              <span>Scheduled / Due</span>
+                              <span>Scheduled</span>
                             </span>
                           )}
 
                           {/* EMI Badge */}
                           {isEmi && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                            <span className="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1 shrink-0">
                               <BadgePercent className="w-3 h-3" />
                               <span>EMI</span>
                             </span>
@@ -1027,7 +1050,7 @@ export default function ExpensesPage() {
 
                           {/* Type Pill */}
                           <span
-                            className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 border ${
+                            className={`text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border shrink-0 ${
                               isIncome
                                 ? 'bg-emerald-950 text-emerald-300 border-emerald-800/60'
                                 : 'bg-rose-950 text-rose-300 border-rose-800/60'
@@ -1037,31 +1060,32 @@ export default function ExpensesPage() {
                           </span>
 
                           {/* Category Tag */}
-                          <span className="text-[11px] bg-slate-800/90 text-slate-300 border border-slate-700/60 px-2 py-0.5 rounded-full shrink-0">
+                          <span className="text-[10px] sm:text-[11px] bg-slate-800/90 text-slate-300 border border-slate-700/60 px-2 py-0.5 rounded-full shrink-0">
                             {t.category}
                           </span>
 
                           {/* Member Badge in Household View */}
                           {view === 'household' && t.user && (
-                            <span className="flex items-center gap-1.5 text-[11px] font-medium bg-slate-800/90 text-slate-300 border border-slate-700/60 px-2 py-0.5 rounded-full shrink-0">
+                            <span className="flex items-center gap-1 text-[10px] sm:text-[11px] font-medium bg-slate-800/90 text-slate-300 border border-slate-700/60 px-2 py-0.5 rounded-full shrink-0">
                               <span
-                                className="w-2 h-2 rounded-full"
+                                className="w-1.5 h-1.5 rounded-full shrink-0"
                                 style={{ backgroundColor: t.user.avatarColor || '#6366f1' }}
                               />
-                              {t.user.name} {t.userId === currentUser.id ? '(You)' : ''}
+                              <span className="truncate max-w-[85px]">{t.user.name}</span>
+                              {t.userId === currentUser.id ? ' (You)' : ''}
                             </span>
                           )}
                         </div>
 
-                        {/* Date & Notes */}
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                        {/* Date, Frequency, Notes */}
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-slate-400">
                           <span className={isScheduled ? (isSkipped ? 'text-amber-400 font-semibold line-through' : 'text-cyan-300 font-semibold') : ''}>
                             {format(new Date(t.date), 'MMMM d, yyyy')}
                           </span>
                           {t.notes && (
                             <>
                               <span>•</span>
-                              <span className="text-slate-300 italic">{t.notes}</span>
+                              <span className="text-slate-300 italic break-words">{t.notes}</span>
                             </>
                           )}
                           {t.frequency && (
@@ -1076,10 +1100,11 @@ export default function ExpensesPage() {
                       </div>
                     </div>
 
-                    {/* Right Amount & Actions */}
-                    <div className="flex items-center gap-3 shrink-0">
+                    {/* Desktop Amount & Action Buttons Row */}
+                    <div className="flex items-center justify-end sm:justify-start gap-2.5 sm:gap-3 shrink-0 pt-2 sm:pt-0 border-t border-slate-800/50 sm:border-0 w-full sm:w-auto">
+                      {/* Desktop Amount */}
                       <span
-                        className={`text-base sm:text-lg font-black tracking-tight ${
+                        className={`hidden sm:inline text-base sm:text-lg font-black tracking-tight ${
                           isSkipped
                             ? 'line-through text-slate-500'
                             : isIncome
@@ -1096,17 +1121,17 @@ export default function ExpensesPage() {
                         isSkipped ? (
                           <button
                             onClick={() => handleUnskipOccurrence(t)}
-                            className="px-3 py-1.5 text-xs font-semibold bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/40 rounded-xl flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
+                            className="w-full sm:w-auto justify-center px-3 py-1.5 text-xs font-semibold bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/40 rounded-xl flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
                             title="Restore this skipped payment"
                           >
                             <RotateCcw className="w-3.5 h-3.5" />
-                            <span>Restore</span>
+                            <span>Restore Occurrence</span>
                           </button>
                         ) : (
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                             <button
                               onClick={() => handlePayScheduled(t)}
-                              className="px-3 py-1.5 text-xs font-semibold bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 rounded-xl flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
+                              className="flex-1 sm:flex-initial justify-center px-3 py-1.5 text-xs font-semibold bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 rounded-xl flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
                               title="Record this scheduled transaction"
                             >
                               <CheckCircle className="w-3.5 h-3.5" />

@@ -114,25 +114,25 @@ export default function UserGuidePage() {
 
   return (
     <AppShell user={currentUser}>
-      <div className="max-w-6xl mx-auto space-y-8 pb-16">
+      <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8 pb-16">
         {/* Hero Header */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-950/80 via-slate-900 to-slate-950 border border-indigo-800/40 p-6 sm:p-10 shadow-2xl">
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-indigo-950/80 via-slate-900 to-slate-950 border border-indigo-800/40 p-4 sm:p-8 lg:p-10 shadow-2xl">
           <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="relative z-10 max-w-2xl space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-semibold uppercase tracking-wider">
+          <div className="relative z-10 max-w-2xl space-y-2.5 sm:space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[11px] sm:text-xs font-semibold uppercase tracking-wider">
               <BookOpen className="w-3.5 h-3.5" /> Complete End-User Manual
             </div>
-            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white">
+            <h1 className="text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white">
               Family Finance Tracker Guide
             </h1>
-            <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
+            <p className="text-xs sm:text-base text-slate-300 leading-relaxed">
               Master collaborative budgeting, loan EMIs, automated recurrence calculations, and
               tenant-isolated privacy for your entire household.
             </p>
           </div>
 
           {/* Search bar inside header */}
-          <div className="mt-6 max-w-md relative z-10">
+          <div className="mt-5 sm:mt-6 max-w-md relative z-10">
             <div className="relative">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
@@ -140,16 +140,51 @@ export default function UserGuidePage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search topics (e.g., 'EMI', 'skip month', 'roles')..."
-                className="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl pl-10 pr-4 py-2 sm:py-2.5 text-xs sm:text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
           </div>
         </div>
 
+        {/* Mobile Quick-Module Selector (< lg screens) */}
+        <div className="lg:hidden w-full space-y-2">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1 flex items-center justify-between">
+            <span>Select Guide Module</span>
+            <span className="font-mono text-slate-500">{filteredSections.length} modules</span>
+          </div>
+          <div className="w-full overflow-x-auto no-scrollbar pb-1">
+            <div className="flex items-center gap-1.5 shrink-0">
+              {filteredSections.map((sec) => {
+                const IconComponent = sec.icon;
+                const isActive = activeSection === sec.id;
+                return (
+                  <button
+                    key={sec.id}
+                    onClick={() => setActiveSection(sec.id)}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border shrink-0 ${
+                      isActive
+                        ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30'
+                        : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <IconComponent className="w-3.5 h-3.5 shrink-0" />
+                    <span>{sec.title}</span>
+                    {sec.badge && (
+                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-indigo-500/30 text-indigo-200 font-bold border border-indigo-400/40">
+                        {sec.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
         {/* Two column layout: Navigation Sidebar & Content Area */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Table of Contents Column */}
-          <div className="lg:col-span-4 sticky top-20 space-y-2">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+          {/* Table of Contents Column (Hidden on mobile; shown on desktop >= lg) */}
+          <div className="hidden lg:block lg:col-span-4 sticky top-20 space-y-2">
             <div className="text-xs font-bold uppercase tracking-wider text-slate-400 px-2 mb-2 flex items-center justify-between">
               <span>Guide Modules</span>
               <span className="text-[11px] font-mono text-slate-500">{filteredSections.length} topics</span>
@@ -226,16 +261,16 @@ export default function UserGuidePage() {
           </div>
 
           {/* Section Detail Content Column */}
-          <div className="lg:col-span-8 space-y-6">
+          <div className="w-full lg:col-span-8 space-y-6 min-w-0">
             {/* 1. OVERVIEW */}
             {activeSection === 'overview' && (
-              <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 sm:p-8 space-y-6">
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
                 <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-                  <div className="p-3 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
-                    <Zap className="w-6 h-6" />
+                  <div className="p-2.5 sm:p-3 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shrink-0">
+                    <Zap className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-white">Platform Overview & Architecture</h2>
+                    <h2 className="text-lg sm:text-xl font-bold text-white">Platform Overview & Architecture</h2>
                     <p className="text-xs text-slate-400">How Family Finance Tracker organizes data</p>
                   </div>
                 </div>
@@ -294,13 +329,13 @@ export default function UserGuidePage() {
 
             {/* 2. ROLES & PERMISSIONS */}
             {activeSection === 'roles' && (
-              <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 sm:p-8 space-y-6">
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
                 <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-                  <div className="p-3 rounded-2xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30">
-                    <Shield className="w-6 h-6" />
+                  <div className="p-2.5 sm:p-3 rounded-2xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 shrink-0">
+                    <Shield className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-white">Roles & Household Permissions</h2>
+                    <h2 className="text-lg sm:text-xl font-bold text-white">Roles & Household Permissions</h2>
                     <p className="text-xs text-slate-400">Administrative authority vs. Member access</p>
                   </div>
                 </div>
@@ -311,9 +346,9 @@ export default function UserGuidePage() {
                     <strong>MEMBER</strong> role.
                   </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 my-2">
                     {/* Admin card */}
-                    <div className="p-5 rounded-2xl bg-slate-950/80 border border-indigo-500/30 space-y-3">
+                    <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-indigo-500/30 space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
                           ADMIN
@@ -324,29 +359,29 @@ export default function UserGuidePage() {
                       <ul className="space-y-1.5 text-xs text-slate-400">
                         <li className="flex items-center gap-2">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                          Update Household Name & Currency
+                          <span>Update Household Name & Currency</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                          Regenerate or share the Invite Code
+                          <span>Regenerate or share the Invite Code</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                          Manage, promote, or remove members
+                          <span>Manage, promote, or remove members</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                          Create and delete category budgets
+                          <span>Create and delete category budgets</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                          Edit or delete any transaction/recurring bill
+                          <span>Edit or delete any transaction/recurring bill</span>
                         </li>
                       </ul>
                     </div>
 
                     {/* Member card */}
-                    <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-3">
+                    <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">
                           MEMBER
@@ -357,23 +392,23 @@ export default function UserGuidePage() {
                       <ul className="space-y-1.5 text-xs text-slate-400">
                         <li className="flex items-center gap-2">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                          Log daily expenses and income entries
+                          <span>Log daily expenses and income entries</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                          View real-time household dashboard
+                          <span>View real-time household dashboard</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                          Edit entries they personally created
+                          <span>Edit entries they personally created</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                          Submit bug reports & feature requests
+                          <span>Submit bug reports & feature requests</span>
                         </li>
                         <li className="flex items-center gap-2 text-slate-500">
                           <AlertCircle className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                          Cannot remove other members or delete household
+                          <span>Cannot remove other members or delete household</span>
                         </li>
                       </ul>
                     </div>
@@ -384,25 +419,25 @@ export default function UserGuidePage() {
 
             {/* 3. EXPENSES & INCOMES */}
             {activeSection === 'expenses' && (
-              <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 sm:p-8 space-y-6">
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
                 <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-                  <div className="p-3 rounded-2xl bg-amber-600/20 text-amber-400 border border-amber-500/30">
-                    <CreditCard className="w-6 h-6" />
+                  <div className="p-2.5 sm:p-3 rounded-2xl bg-amber-600/20 text-amber-400 border border-amber-500/30 shrink-0">
+                    <CreditCard className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-white">Expenses & Income Management</h2>
+                    <h2 className="text-lg sm:text-xl font-bold text-white">Expenses & Income Management</h2>
                     <p className="text-xs text-slate-400">Maintaining an accurate household ledger</p>
                   </div>
                 </div>
 
                 <div className="space-y-4 text-sm text-slate-300 leading-relaxed">
-                  <h3 className="text-base font-semibold text-white">Logging Expenses</h3>
+                  <h3 className="text-sm sm:text-base font-semibold text-white">Logging Expenses</h3>
                   <p>
                     Navigate to the <strong>Expenses</strong> page to view the current month&apos;s transactions
                     or record a new entry.
                   </p>
 
-                  <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
+                  <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2.5 sm:space-y-3">
                     <div className="text-xs font-semibold uppercase tracking-wider text-amber-400">
                       Key Transaction Fields
                     </div>
@@ -425,7 +460,7 @@ export default function UserGuidePage() {
                     </ul>
                   </div>
 
-                  <h3 className="text-base font-semibold text-white pt-2">Income Streams</h3>
+                  <h3 className="text-sm sm:text-base font-semibold text-white pt-2">Income Streams</h3>
                   <p>
                     Log salaries, freelance earnings, dividends, or gifts in the <strong>Incomes</strong>{' '}
                     tab. The dashboard compares total income vs. total expenditures to give you an exact{' '}
@@ -437,14 +472,14 @@ export default function UserGuidePage() {
 
             {/* 4. RECURRING BILLS, EMIS & SKIP ENGINE */}
             {activeSection === 'recurring' && (
-              <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 sm:p-8 space-y-6">
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
                 <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-                  <div className="p-3 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
-                    <Repeat className="w-6 h-6" />
+                  <div className="p-2.5 sm:p-3 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shrink-0">
+                    <Repeat className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-xl font-bold text-white">
+                      <h2 className="text-lg sm:text-xl font-bold text-white">
                         Recurring Bills, EMIs & Skip Engine
                       </h2>
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
@@ -457,19 +492,18 @@ export default function UserGuidePage() {
                   </div>
                 </div>
 
-                <div className="space-y-5 text-sm text-slate-300 leading-relaxed">
+                <div className="space-y-4 sm:space-y-5 text-sm text-slate-300 leading-relaxed">
                   {/* Highlight box 1: Start Date Calculation */}
-                  <div className="p-5 rounded-2xl bg-indigo-950/40 border border-indigo-800/40 space-y-2.5">
+                  <div className="p-4 sm:p-5 rounded-2xl bg-indigo-950/40 border border-indigo-800/40 space-y-2 sm:space-y-2.5">
                     <div className="flex items-center gap-2 text-indigo-300 font-semibold text-sm">
-                      <CalendarDays className="w-4 h-4 text-indigo-400" />
-                      <span>1. Start Date Based Calculation (Not Just Day-of-Month)</span>
+                      <CalendarDays className="w-4 h-4 text-indigo-400 shrink-0" />
+                      <span>1. Start Date Based Calculation</span>
                     </div>
                     <p className="text-xs text-slate-300 leading-relaxed">
-                      Previously, recurring systems would blindly match day numbers. In our upgraded
-                      engine, recurring transactions calculate occurrences from the exact{' '}
+                      Recurring transactions calculate occurrences from the exact{' '}
                       <strong>Start Date</strong> when the bill or loan originated:
                     </p>
-                    <ul className="space-y-1.5 text-xs text-slate-400 pl-4 list-disc">
+                    <ul className="space-y-1.5 text-xs text-slate-400 pl-4 list-disc break-words">
                       <li>
                         Months prior to the bill&apos;s start date are never erroneously charged or projected.
                       </li>
@@ -485,16 +519,16 @@ export default function UserGuidePage() {
                   </div>
 
                   {/* Highlight box 2: Skipping Specific Months */}
-                  <div className="p-5 rounded-2xl bg-purple-950/40 border border-purple-800/40 space-y-2.5">
+                  <div className="p-4 sm:p-5 rounded-2xl bg-purple-950/40 border border-purple-800/40 space-y-2 sm:space-y-2.5">
                     <div className="flex items-center gap-2 text-purple-300 font-semibold text-sm">
-                      <Sparkles className="w-4 h-4 text-purple-400" />
-                      <span>2. Skipping Specific Occurrences & Months (e.g. Loan Moratorium)</span>
+                      <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
+                      <span>2. Skipping Specific Occurrences (e.g. Loan Moratorium)</span>
                     </div>
                     <p className="text-xs text-slate-300 leading-relaxed">
-                      Need to pause a gym subscription for one month, or received an EMI moratorium for
-                      September? You don&apos;t have to delete the recurring bill!
+                      Need to pause a gym subscription for one month, or received an EMI moratorium?
+                      You don&apos;t have to delete the recurring bill!
                     </p>
-                    <ul className="space-y-1.5 text-xs text-slate-400 pl-4 list-disc">
+                    <ul className="space-y-1.5 text-xs text-slate-400 pl-4 list-disc break-words">
                       <li>
                         Under the <strong>Recurring</strong> tab, click the{' '}
                         <span className="text-purple-300 font-semibold">&quot;Skip Month / Date&quot;</span>{' '}
@@ -513,9 +547,9 @@ export default function UserGuidePage() {
                   </div>
 
                   {/* Highlight box 3: Cascading Deletion */}
-                  <div className="p-5 rounded-2xl bg-rose-950/30 border border-rose-800/40 space-y-2.5">
+                  <div className="p-4 sm:p-5 rounded-2xl bg-rose-950/30 border border-rose-800/40 space-y-2 sm:space-y-2.5">
                     <div className="flex items-center gap-2 text-rose-300 font-semibold text-sm">
-                      <AlertCircle className="w-4 h-4 text-rose-400" />
+                      <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
                       <span>3. Clean Cascading Bill Deletion</span>
                     </div>
                     <p className="text-xs text-slate-300 leading-relaxed">
@@ -530,13 +564,13 @@ export default function UserGuidePage() {
 
             {/* 5. BUDGETS & FORECASTING */}
             {activeSection === 'budgets' && (
-              <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 sm:p-8 space-y-6">
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
                 <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-                  <div className="p-3 rounded-2xl bg-cyan-600/20 text-cyan-400 border border-cyan-500/30">
-                    <PieChart className="w-6 h-6" />
+                  <div className="p-2.5 sm:p-3 rounded-2xl bg-cyan-600/20 text-cyan-400 border border-cyan-500/30 shrink-0">
+                    <PieChart className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-white">Budgets & Cash Flow Forecasting</h2>
+                    <h2 className="text-lg sm:text-xl font-bold text-white">Budgets & Cash Flow Forecasting</h2>
                     <p className="text-xs text-slate-400">Preventing overspending before month end</p>
                   </div>
                 </div>
@@ -547,54 +581,63 @@ export default function UserGuidePage() {
                     for Entertainment).
                   </p>
 
-                  <div className="space-y-3 my-2">
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-                      <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                      <span className="font-semibold text-emerald-400">Under 80% Spent:</span>
-                      <span className="text-slate-400">Healthy status. You are safely under budget.</span>
+                  <div className="space-y-2.5 my-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+                        <span className="font-semibold text-emerald-400">Under 80% Spent:</span>
+                      </div>
+                      <span className="text-slate-400 pl-4.5 sm:pl-0">Healthy status. You are safely under budget.</span>
                     </div>
 
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-                      <div className="w-3 h-3 rounded-full bg-amber-500" />
-                      <span className="font-semibold text-amber-400">80% – 100% Spent:</span>
-                      <span className="text-slate-400">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+                        <span className="font-semibold text-amber-400">80% – 100% Spent:</span>
+                      </div>
+                      <span className="text-slate-400 pl-4.5 sm:pl-0">
                         Warning threshold. Advised to slow down discretionary spending.
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-                      <div className="w-3 h-3 rounded-full bg-rose-500" />
-                      <span className="font-semibold text-rose-400">Over 100% Spent:</span>
-                      <span className="text-slate-400">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
+                        <span className="font-semibold text-rose-400">Over 100% Spent:</span>
+                      </div>
+                      <span className="text-slate-400 pl-4.5 sm:pl-0">
                         Budget exceeded. Highlighted with prominent warning banners.
                       </span>
                     </div>
                   </div>
 
-                  <h3 className="text-base font-semibold text-white pt-2">Forecasting Algorithm</h3>
-                  <p className="text-xs text-slate-300">
-                    Our forecasting engine calculates your daily velocity:
-                    <code className="block bg-slate-950 p-2.5 rounded-xl border border-slate-800 font-mono text-xs my-2 text-indigo-300">
-                      Projected Spend = Current Spent + (Average Daily Non-Recurring Spend × Remaining
-                      Days) + Scheduled Recurring Bills
-                    </code>
-                    This gives you a realistic view of where your household balance will finish by the
-                    last day of the month.
-                  </p>
+                  <h3 className="text-sm sm:text-base font-semibold text-white pt-2">Forecasting Algorithm</h3>
+                  <div className="text-xs text-slate-300 space-y-2">
+                    <p>Our forecasting engine calculates your daily velocity:</p>
+                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 my-2 overflow-x-auto no-scrollbar">
+                      <code className="block font-mono text-[11px] sm:text-xs text-indigo-300 break-words whitespace-normal leading-relaxed">
+                        Projected Spend = Current Spent + (Average Daily Non-Recurring Spend × Remaining Days) + Scheduled Recurring Bills
+                      </code>
+                    </div>
+                    <p>
+                      This gives you a realistic view of where your household balance will finish by the
+                      last day of the month.
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* 6. FEEDBACK & BUG REPORTS */}
             {activeSection === 'feedback' && (
-              <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 sm:p-8 space-y-6">
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
                 <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-                  <div className="p-3 rounded-2xl bg-purple-600/20 text-purple-400 border border-purple-500/30">
-                    <MessageSquarePlus className="w-6 h-6" />
+                  <div className="p-2.5 sm:p-3 rounded-2xl bg-purple-600/20 text-purple-400 border border-purple-500/30 shrink-0">
+                    <MessageSquarePlus className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-xl font-bold text-white">In-App Feedback & Bug Reports</h2>
+                      <h2 className="text-lg sm:text-xl font-bold text-white">In-App Feedback & Bug Reports</h2>
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
                         New
                       </span>
@@ -612,8 +655,8 @@ export default function UserGuidePage() {
                     module.
                   </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-2">
-                    <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 my-2">
+                    <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
                       <div className="text-xs font-semibold uppercase tracking-wider text-purple-400">
                         Screenshot Attachment
                       </div>
@@ -622,7 +665,7 @@ export default function UserGuidePage() {
                       </p>
                     </div>
 
-                    <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
+                    <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
                       <div className="text-xs font-semibold uppercase tracking-wider text-indigo-400">
                         Automatic Context
                       </div>
@@ -633,7 +676,7 @@ export default function UserGuidePage() {
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2">
+                  <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2">
                     <div className="text-xs font-semibold text-slate-200">How to Open the Feedback Form:</div>
                     <ul className="space-y-1 text-xs text-slate-400 list-disc list-inside">
                       <li>Click <strong>&quot;Feedback &amp; Issues&quot;</strong> at the bottom of the left navigation sidebar.</li>
@@ -646,18 +689,18 @@ export default function UserGuidePage() {
 
             {/* 7. FAQ */}
             {activeSection === 'faq' && (
-              <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 sm:p-8 space-y-6">
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
                 <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-                  <div className="p-3 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
-                    <HelpCircle className="w-6 h-6" />
+                  <div className="p-2.5 sm:p-3 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shrink-0">
+                    <HelpCircle className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-white">Frequently Asked Questions</h2>
+                    <h2 className="text-lg sm:text-xl font-bold text-white">Frequently Asked Questions</h2>
                     <p className="text-xs text-slate-400">Quick answers to common situations</p>
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2.5 sm:space-y-3">
                   {[
                     {
                       q: 'Can family members see each other’s expenses?',
@@ -686,17 +729,17 @@ export default function UserGuidePage() {
                     >
                       <button
                         onClick={() => setExpandedFaq(expandedFaq === idx ? null : idx)}
-                        className="w-full text-left p-4 flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold text-slate-200 hover:text-white cursor-pointer"
+                        className="w-full text-left p-3.5 sm:p-4 flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold text-slate-200 hover:text-white cursor-pointer"
                       >
-                        <span>{item.q}</span>
+                        <span className="leading-snug">{item.q}</span>
                         <ChevronRight
-                          className={`w-4 h-4 text-slate-500 transition-transform ${
+                          className={`w-4 h-4 text-slate-500 shrink-0 transition-transform ${
                             expandedFaq === idx ? 'rotate-90 text-indigo-400' : ''
                           }`}
                         />
                       </button>
                       {expandedFaq === idx && (
-                        <div className="px-4 pb-4 text-xs text-slate-400 leading-relaxed border-t border-slate-800/40 pt-3">
+                        <div className="px-3.5 sm:px-4 pb-3.5 sm:pb-4 text-xs text-slate-400 leading-relaxed border-t border-slate-800/40 pt-3">
                           {item.a}
                         </div>
                       )}
@@ -705,6 +748,27 @@ export default function UserGuidePage() {
                 </div>
               </div>
             )}
+
+            {/* Mobile-only Feedback Card (at bottom of content on < lg screens) */}
+            <div className="lg:hidden p-4 rounded-2xl bg-gradient-to-br from-purple-950/40 to-slate-900/60 border border-purple-800/30 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-purple-300">
+                <MessageSquarePlus className="w-4 h-4 shrink-0" />
+                <span>Found an Issue or Have an Idea?</span>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                You can report bugs, request features, or send screenshots directly to our development team.
+              </p>
+              <button
+                onClick={() => {
+                  const btn = document.getElementById('app-shell-feedback-btn');
+                  if (btn) btn.click();
+                }}
+                className="w-full mt-1 py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow"
+              >
+                <span>Open Feedback Modal</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
