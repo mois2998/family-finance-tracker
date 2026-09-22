@@ -207,7 +207,7 @@ export default function AppShell({
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-xs sm:text-sm text-white shrink-0">
               {user.currency || '₹'}
             </div>
-            <span className="font-bold text-xs sm:text-sm tracking-tight text-white truncate max-w-[70px] xs:max-w-[110px]">
+            <span className="font-bold text-xs sm:text-sm tracking-tight text-white truncate max-w-[90px] sm:max-w-[160px]">
               {user.householdName || 'Finance'}
             </span>
           </div>
@@ -264,7 +264,7 @@ export default function AppShell({
               title="Open Platform User Guide"
             >
               <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="hidden xs:inline">Guide</span>
+              <span className="hidden sm:inline">Guide</span>
             </Link>
 
             {/* Feedback Button */}

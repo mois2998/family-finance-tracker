@@ -710,22 +710,22 @@ export default function ExpensesPage() {
         </div>
 
         {/* ========================================================================= */}
-        {/* Financial KPI Summary Cards (Requested by User) */}
+        {/* Financial KPI Summary Cards */}
         {/* ========================================================================= */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
-          {/* Card 1: Total Income (Credit) */}
+          {/* Card 1: Total Income */}
           <div className="relative overflow-hidden bg-gradient-to-br from-emerald-950/50 via-slate-900/90 to-[#0b1329] border border-emerald-500/30 p-3.5 sm:p-4 rounded-2xl shadow-xl hover:border-emerald-500/50 transition-all min-w-0">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 truncate">
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5 tracking-wide">
                 <ArrowUpRight className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span className="truncate">Total Income (Credit)</span>
+                <span>Total Income</span>
               </span>
               <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/40 shrink-0">
                 Inflow
               </span>
             </div>
             <div className="mt-2.5">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-black text-emerald-400 tracking-tight truncate">
+              <div className="text-xl sm:text-2xl lg:text-3xl font-black text-emerald-400 tracking-tight">
                 +{currency}{totalIncome.toLocaleString('en-IN')}
               </div>
               <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5 flex-wrap break-words">
@@ -739,19 +739,19 @@ export default function ExpensesPage() {
             </div>
           </div>
 
-          {/* Card 2: Scheduled Payments Total (Debit) */}
+          {/* Card 2: Scheduled Bills */}
           <div className="relative overflow-hidden bg-gradient-to-br from-amber-950/40 via-slate-900/90 to-[#0b1329] border border-amber-500/30 p-3.5 sm:p-4 rounded-2xl shadow-xl hover:border-amber-500/50 transition-all min-w-0">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5 truncate">
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5 tracking-wide">
                 <CalendarClock className="w-4 h-4 text-amber-400 shrink-0" />
-                <span className="truncate">Scheduled Payments (Debit)</span>
+                <span>Scheduled Bills</span>
               </span>
               <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-500/40 shrink-0">
                 Upcoming
               </span>
             </div>
             <div className="mt-2.5">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-black text-amber-400 tracking-tight truncate">
+              <div className="text-xl sm:text-2xl lg:text-3xl font-black text-amber-400 tracking-tight">
                 -{currency}{scheduledPaymentsTotal.toLocaleString('en-IN')}
               </div>
               <p className="text-[11px] text-slate-400 mt-1 break-words">
@@ -763,19 +763,19 @@ export default function ExpensesPage() {
             </div>
           </div>
 
-          {/* Card 3: Actual Spent (Debit) */}
+          {/* Card 3: Actual Spent */}
           <div className="relative overflow-hidden bg-gradient-to-br from-rose-950/40 via-slate-900/90 to-[#0b1329] border border-rose-500/30 p-3.5 sm:p-4 rounded-2xl shadow-xl hover:border-rose-500/50 transition-all min-w-0">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black uppercase tracking-wider text-rose-400 flex items-center gap-1.5 truncate">
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="text-xs font-bold text-rose-400 flex items-center gap-1.5 tracking-wide">
                 <ArrowDownLeft className="w-4 h-4 text-rose-400 shrink-0" />
-                <span className="truncate">Actual Spent (Debit)</span>
+                <span>Actual Spent</span>
               </span>
               <span className="text-[10px] bg-rose-500/20 text-rose-300 font-bold px-2 py-0.5 rounded-full border border-rose-500/40 shrink-0">
-                Logged Outflow
+                Outflow
               </span>
             </div>
             <div className="mt-2.5">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-black text-rose-400 tracking-tight truncate">
+              <div className="text-xl sm:text-2xl lg:text-3xl font-black text-rose-400 tracking-tight">
                 -{currency}{actualSpentTotal.toLocaleString('en-IN')}
               </div>
               <p className="text-[11px] text-slate-400 mt-1 break-words">
@@ -786,10 +786,10 @@ export default function ExpensesPage() {
 
           {/* Card 4: Projected Net Savings */}
           <div className="relative overflow-hidden bg-gradient-to-br from-indigo-950/50 via-slate-900/90 to-[#0b1329] border border-indigo-500/30 p-3.5 sm:p-4 rounded-2xl shadow-xl hover:border-indigo-500/50 transition-all min-w-0">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black uppercase tracking-wider text-indigo-300 flex items-center gap-1.5 truncate">
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="text-xs font-bold text-indigo-300 flex items-center gap-1.5 tracking-wide">
                 <Wallet className="w-4 h-4 text-indigo-400 shrink-0" />
-                <span className="truncate">Projected Net Balance</span>
+                <span>Projected Balance</span>
               </span>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
                 projectedNetBalance >= 0
@@ -800,7 +800,7 @@ export default function ExpensesPage() {
               </span>
             </div>
             <div className="mt-2.5">
-              <div className={`text-xl sm:text-2xl lg:text-3xl font-black tracking-tight truncate ${
+              <div className={`text-xl sm:text-2xl lg:text-3xl font-black tracking-tight ${
                 projectedNetBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'
               }`}>
                 {projectedNetBalance >= 0 ? '+' : ''}{currency}{projectedNetBalance.toLocaleString('en-IN')}
@@ -821,7 +821,7 @@ export default function ExpensesPage() {
                 <button
                   type="button"
                   onClick={() => handleTypeFilter('ALL')}
-                  className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg font-bold transition-all duration-150 active:scale-95 shrink-0 ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-lg font-bold transition-all duration-150 active:scale-95 shrink-0 ${
                     typeFilter === 'ALL'
                       ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-600/40 ring-1 ring-indigo-400/50'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
@@ -829,8 +829,8 @@ export default function ExpensesPage() {
                 >
                   <ArrowUpDown className="w-3.5 h-3.5" />
                   <span>All</span>
-                  <span className="hidden xs:inline">Transactions</span>
-                  <span className="ml-0.5 sm:ml-1 text-[9px] sm:text-[10px] bg-slate-800/90 px-1.5 py-0.5 rounded-full text-slate-300 font-semibold">
+                  <span className="hidden sm:inline">Transactions</span>
+                  <span className="ml-1 text-[10px] bg-slate-800/90 px-1.5 py-0.5 rounded-full text-slate-300 font-semibold">
                     {allTransactions.length}
                   </span>
                   {typeFilter === 'ALL' && (
@@ -841,7 +841,7 @@ export default function ExpensesPage() {
                 <button
                   type="button"
                   onClick={() => handleTypeFilter('DEDUCTED')}
-                  className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg font-bold transition-all duration-150 active:scale-95 shrink-0 ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-lg font-bold transition-all duration-150 active:scale-95 shrink-0 ${
                     typeFilter === 'DEDUCTED'
                       ? 'bg-gradient-to-r from-rose-600 to-rose-700 text-white shadow-lg shadow-rose-600/40 ring-1 ring-rose-400/50'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
@@ -849,8 +849,8 @@ export default function ExpensesPage() {
                 >
                   <ArrowDownLeft className="w-3.5 h-3.5" />
                   <span>Deductions</span>
-                  <span className="hidden xs:inline">(-)</span>
-                  <span className="ml-0.5 sm:ml-1 text-[9px] sm:text-[10px] bg-rose-950/90 border border-rose-800/60 px-1.5 py-0.5 rounded-full text-rose-300 font-semibold">
+                  <span className="hidden sm:inline">(-)</span>
+                  <span className="ml-1 text-[10px] bg-rose-950/90 border border-rose-800/60 px-1.5 py-0.5 rounded-full text-rose-300 font-semibold">
                     {filteredTransactions.filter((t) => t.type === 'EXPENSE').length}
                   </span>
                   {typeFilter === 'DEDUCTED' && (
@@ -861,7 +861,7 @@ export default function ExpensesPage() {
                 <button
                   type="button"
                   onClick={() => handleTypeFilter('ADDED')}
-                  className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg font-bold transition-all duration-150 active:scale-95 shrink-0 ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-lg font-bold transition-all duration-150 active:scale-95 shrink-0 ${
                     typeFilter === 'ADDED'
                       ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-600/40 ring-1 ring-emerald-400/50'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
@@ -869,8 +869,8 @@ export default function ExpensesPage() {
                 >
                   <ArrowUpRight className="w-3.5 h-3.5" />
                   <span>Additions</span>
-                  <span className="hidden xs:inline">(+)</span>
-                  <span className="ml-0.5 sm:ml-1 text-[9px] sm:text-[10px] bg-emerald-950/90 border border-emerald-800/60 px-1.5 py-0.5 rounded-full text-emerald-300 font-semibold">
+                  <span className="hidden sm:inline">(+)</span>
+                  <span className="ml-1 text-[10px] bg-emerald-950/90 border border-emerald-800/60 px-1.5 py-0.5 rounded-full text-emerald-300 font-semibold">
                     {filteredTransactions.filter((t) => t.type === 'INCOME').length}
                   </span>
                   {typeFilter === 'ADDED' && (
@@ -1003,7 +1003,7 @@ export default function ExpensesPage() {
                       <div className="min-w-0 flex-1 space-y-1.5">
                         {/* Title + Amount (Mobile: amount aligns to right) */}
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm sm:text-base font-semibold text-white break-words sm:truncate leading-snug">
+                          <p className="text-sm sm:text-base font-semibold text-white break-words leading-snug">
                             {t.description}
                           </p>
 
@@ -1027,8 +1027,8 @@ export default function ExpensesPage() {
                           {isSkipped && (
                             <span className="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1 shrink-0">
                               <RotateCcw className="w-3 h-3" />
-                              <span className="hidden xs:inline">Skipped (Excluded from total)</span>
-                              <span className="xs:hidden">Skipped</span>
+                              <span className="hidden sm:inline">Skipped (Excluded from total)</span>
+                              <span className="sm:hidden">Skipped</span>
                             </span>
                           )}
 
@@ -1101,7 +1101,13 @@ export default function ExpensesPage() {
                     </div>
 
                     {/* Desktop Amount & Action Buttons Row */}
-                    <div className="flex items-center justify-end sm:justify-start gap-2.5 sm:gap-3 shrink-0 pt-2 sm:pt-0 border-t border-slate-800/50 sm:border-0 w-full sm:w-auto">
+                    <div
+                      className={`flex items-center justify-end sm:justify-start gap-2.5 sm:gap-3 shrink-0 sm:border-0 w-full sm:w-auto ${
+                        isScheduled || (currentUser.role === 'ADMIN' || t.userId === currentUser.id)
+                          ? 'pt-2 sm:pt-0 border-t border-slate-800/50 sm:border-0'
+                          : 'hidden sm:flex'
+                      }`}
+                    >
                       {/* Desktop Amount */}
                       <span
                         className={`hidden sm:inline text-base sm:text-lg font-black tracking-tight ${
