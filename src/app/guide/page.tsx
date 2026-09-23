@@ -447,6 +447,11 @@ export default function UserGuidePage() {
                         Utilities, Healthcare). Each category connects directly to your Monthly Budget.
                       </li>
                       <li>
+                        <strong>Workspace Custom Categories:</strong> Click <strong>+ New</strong> right next to Category
+                        or Income Source to add your own custom categories (e.g. <em>Pet Care</em>, <em>Gym & Fitness</em>, <em>Tuition</em>).
+                        Custom categories are strictly isolated and visible only within your household workspace.
+                      </li>
+                      <li>
                         <strong>Payer Assignment:</strong> Choose who paid for the expense. This allows
                         couples or roommates to see exact spending balances.
                       </li>

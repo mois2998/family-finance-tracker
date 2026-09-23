@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, PlusCircle, ArrowUpRight, ArrowDownLeft, Calendar, Tag, User as UserIcon, Clock, Check } from 'lucide-react';
+import { X, PlusCircle, ArrowUpRight, ArrowDownLeft, Calendar, Tag, User as UserIcon, Clock, Check, Plus, Sparkles } from 'lucide-react';
 import { useFeedback } from '@/context/FeedbackContext';
 
 interface Member {
@@ -60,6 +60,19 @@ export default function AddTransactionModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Workspace-isolated custom categories state
+  const [customExpenseCategories, setCustomExpenseCategories] = useState<string[]>([]);
+  const [customIncomeSources, setCustomIncomeSources] = useState<string[]>([]);
+
+  // Inline custom category creation state
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [addingCategoryLoading, setAddingCategoryLoading] = useState(false);
+
+  const [isAddingIncomeSource, setIsAddingIncomeSource] = useState(false);
+  const [newIncomeSourceName, setNewIncomeSourceName] = useState('');
+  const [addingIncomeSourceLoading, setAddingIncomeSourceLoading] = useState(false);
+
   // Expense form state
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState(EXPENSE_CATEGORIES[0]);
@@ -77,11 +90,83 @@ export default function AddTransactionModal({
   const [incomeDate, setIncomeDate] = useState(new Date().toISOString().split('T')[0]);
   const [incomeNotes, setIncomeNotes] = useState('');
 
-  // Synchronize assignedUserId whenever currentUserId changes or when modal opens
+  // Fetch workspace custom categories
+  const fetchCustomCategories = async () => {
+    try {
+      const res = await fetch('/api/categories');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.customCategories) {
+          const expCats = data.customCategories
+            .filter((c: any) => c.type === 'EXPENSE')
+            .map((c: any) => c.name);
+          const incCats = data.customCategories
+            .filter((c: any) => c.type === 'INCOME')
+            .map((c: any) => c.name);
+          setCustomExpenseCategories(expCats);
+          setCustomIncomeSources(incCats);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load workspace custom categories:', err);
+    }
+  };
+
+  // Synchronize assignedUserId and fetch categories whenever currentUserId changes or when modal opens
   useEffect(() => {
     setAssignedUserId(currentUserId);
     setError('');
+    setIsAddingCategory(false);
+    setIsAddingIncomeSource(false);
+    setNewCategoryName('');
+    setNewIncomeSourceName('');
+    if (isOpen) {
+      fetchCustomCategories();
+    }
   }, [currentUserId, isOpen]);
+
+  const handleAddCustomCategory = async (type: 'EXPENSE' | 'INCOME') => {
+    const nameToCreate = type === 'EXPENSE' ? newCategoryName.trim() : newIncomeSourceName.trim();
+    if (!nameToCreate) return;
+
+    if (type === 'EXPENSE') setAddingCategoryLoading(true);
+    else setAddingIncomeSourceLoading(true);
+
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: nameToCreate, type }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const createdName = data.category?.name || nameToCreate;
+        if (type === 'EXPENSE') {
+          if (!customExpenseCategories.includes(createdName)) {
+            setCustomExpenseCategories((prev) => [...prev, createdName].sort());
+          }
+          setCategory(createdName);
+          setNewCategoryName('');
+          setIsAddingCategory(false);
+        } else {
+          if (!customIncomeSources.includes(createdName)) {
+            setCustomIncomeSources((prev) => [...prev, createdName].sort());
+          }
+          setIncomeSource(createdName);
+          setNewIncomeSourceName('');
+          setIsAddingIncomeSource(false);
+        }
+        showFeedback(`Added category "${createdName}" to your workspace`, 'success');
+      } else {
+        showFeedback(data.error || 'Failed to add custom category', 'warning');
+      }
+    } catch (err: any) {
+      showFeedback('Network error adding custom category', 'warning');
+    } finally {
+      if (type === 'EXPENSE') setAddingCategoryLoading(false);
+      else setAddingIncomeSourceLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -253,19 +338,78 @@ export default function AddTransactionModal({
               {/* Category & Date Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                    <Tag className="w-3.5 h-3.5" /> Category *
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                      <Tag className="w-3.5 h-3.5" /> Category *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingCategory((v) => !v)}
+                      className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>{isAddingCategory ? 'Cancel' : '+ New'}</span>
+                    </button>
+                  </div>
+
+                  {/* Inline New Category Input */}
+                  {isAddingCategory && (
+                    <div className="mb-2 p-2 bg-slate-900 border border-indigo-500/50 rounded-xl flex items-center gap-1.5 shadow-lg animate-fadeIn">
+                      <input
+                        type="text"
+                        placeholder="e.g. Pet Care, Gym..."
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCustomCategory('EXPENSE');
+                          }
+                        }}
+                        className="flex-1 bg-slate-950 border border-slate-700/80 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        disabled={!newCategoryName.trim() || addingCategoryLoading}
+                        onClick={() => handleAddCustomCategory('EXPENSE')}
+                        className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors shrink-0 shadow-sm"
+                      >
+                        {addingCategoryLoading ? '...' : 'Add'}
+                      </button>
+                    </div>
+                  )}
+
                   <select
                     value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
+                    onChange={(e) => {
+                      if (e.target.value === '__ADD_NEW__') {
+                        setIsAddingCategory(true);
+                      } else {
+                        setCategory(e.target.value);
+                      }
+                    }}
+                    className="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm cursor-pointer"
                   >
-                    {EXPENSE_CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
+                    {customExpenseCategories.length > 0 && (
+                      <optgroup label="Workspace Custom Categories">
+                        {customExpenseCategories.map((cat) => (
+                          <option key={`custom-${cat}`} value={cat}>
+                            ✦ {cat}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    <optgroup label="Default Categories">
+                      {EXPENSE_CATEGORIES.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Actions">
+                      <option value="__ADD_NEW__">+ Add Custom Category...</option>
+                    </optgroup>
                   </select>
                 </div>
 
@@ -399,19 +543,78 @@ export default function AddTransactionModal({
               {/* Source & Frequency */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                    Source / Title *
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      Source / Title *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingIncomeSource((v) => !v)}
+                      className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>{isAddingIncomeSource ? 'Cancel' : '+ New'}</span>
+                    </button>
+                  </div>
+
+                  {/* Inline New Income Source Input */}
+                  {isAddingIncomeSource && (
+                    <div className="mb-2 p-2 bg-slate-900 border border-emerald-500/50 rounded-xl flex items-center gap-1.5 shadow-lg animate-fadeIn">
+                      <input
+                        type="text"
+                        placeholder="e.g. YouTube, Royalties..."
+                        value={newIncomeSourceName}
+                        onChange={(e) => setNewIncomeSourceName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCustomCategory('INCOME');
+                          }
+                        }}
+                        className="flex-1 bg-slate-950 border border-slate-700/80 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        disabled={!newIncomeSourceName.trim() || addingIncomeSourceLoading}
+                        onClick={() => handleAddCustomCategory('INCOME')}
+                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors shrink-0 shadow-sm"
+                      >
+                        {addingIncomeSourceLoading ? '...' : 'Add'}
+                      </button>
+                    </div>
+                  )}
+
                   <select
                     value={incomeSource}
-                    onChange={(e) => setIncomeSource(e.target.value)}
-                    className="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500 text-sm"
+                    onChange={(e) => {
+                      if (e.target.value === '__ADD_NEW__') {
+                        setIsAddingIncomeSource(true);
+                      } else {
+                        setIncomeSource(e.target.value);
+                      }
+                    }}
+                    className="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500 text-sm cursor-pointer"
                   >
-                    {INCOME_SOURCES.map((src) => (
-                      <option key={src} value={src}>
-                        {src}
-                      </option>
-                    ))}
+                    {customIncomeSources.length > 0 && (
+                      <optgroup label="Workspace Custom Sources">
+                        {customIncomeSources.map((src) => (
+                          <option key={`custom-inc-${src}`} value={src}>
+                            ✦ {src}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    <optgroup label="Default Sources">
+                      {INCOME_SOURCES.map((src) => (
+                        <option key={src} value={src}>
+                          {src}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Actions">
+                      <option value="__ADD_NEW__">+ Add Custom Source...</option>
+                    </optgroup>
                   </select>
                 </div>
 

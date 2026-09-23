@@ -24,6 +24,7 @@ model Household {
   categoryBudgets   CategoryBudget[]
   savingsGoals      SavingsGoal[]
   feedbacks         Feedback[]
+  customCategories  CustomCategory[]
 }
 
 model User {
@@ -160,4 +161,19 @@ model Feedback {
   @@index([userId])
   @@index([status])
   @@index([createdAt])
+}
+
+model CustomCategory {
+  id          String    @id @default(uuid())
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  name        String
+  type        String    @default("EXPENSE") // "EXPENSE" or "INCOME"
+  color       String?   @default("#6366f1")
+  icon        String?   @default("Tag")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([householdId, name, type])
+  @@index([householdId])
 }

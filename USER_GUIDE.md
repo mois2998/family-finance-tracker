@@ -67,6 +67,7 @@ Each member within a household is assigned one of two roles:
 ### Logging an Expense
 1. Go to **Expenses** and click **+ Add Expense**.
 2. Specify the **Amount**, **Category** (e.g. *Groceries, Utilities, Healthcare, Dining, Transport*), and **Date**.
+   - **Workspace Custom Categories**: Need a category not in the default list? Click **+ New** next to Category or select `+ Add Custom Category...` from the dropdown. Custom categories are saved to your household workspace and are isolated from other tenants.
 3. Choose **Who Paid** (defaults to yourself).
 4. Add optional notes or merchant details.
 5. Click **Save**. The dashboard, category breakdown, and monthly budget progress bars update immediately.

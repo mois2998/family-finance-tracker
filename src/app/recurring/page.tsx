@@ -44,6 +44,12 @@ export default function RecurringPage() {
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [submitting, setSubmitting] = useState(false);
 
+  // Workspace-isolated custom categories state
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
+  const [isAddingCustomCategory, setIsAddingCustomCategory] = useState(false);
+  const [newCustomCategoryName, setNewCustomCategoryName] = useState('');
+  const [addingCategoryLoading, setAddingCategoryLoading] = useState(false);
+
   // Mark Paid dialog
   const [payTarget, setPayTarget] = useState<any>(null);
   const [payAmount, setPayAmount] = useState('');
@@ -81,6 +87,23 @@ export default function RecurringPage() {
       setLoading(false);
     }
 
+    // Load workspace custom categories
+    try {
+      const resCat = await fetch('/api/categories');
+      if (resCat.ok) {
+        const catData = await resCat.json();
+        if (catData.customCategories) {
+          setCustomCategories(
+            catData.customCategories
+              .filter((c: any) => c.type === 'EXPENSE')
+              .map((c: any) => c.name)
+          );
+        }
+      }
+    } catch {
+      // background fetch error ignored
+    }
+
     // Load AI suggestions in background without blocking the UI
     try {
       const targetView = isAdmin ? view : 'personal';
@@ -95,6 +118,33 @@ export default function RecurringPage() {
       // background fetch error ignored
     }
   }, [currentUser, isAdmin, view]);
+
+  const handleAddCustomCategory = async () => {
+    const trimmed = newCustomCategoryName.trim();
+    if (!trimmed) return;
+    setAddingCategoryLoading(true);
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed, type: 'EXPENSE' }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const createdName = data.category?.name || trimmed;
+        if (!customCategories.includes(createdName)) {
+          setCustomCategories((prev) => [...prev, createdName].sort());
+        }
+        setCategory(createdName);
+        setNewCustomCategoryName('');
+        setIsAddingCustomCategory(false);
+      }
+    } catch (err) {
+      console.error('Error adding category:', err);
+    } finally {
+      setAddingCategoryLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (currentUser) {
@@ -381,21 +431,84 @@ export default function RecurringPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">
-                    Category
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-slate-400 uppercase">
+                      Category
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingCustomCategory((v) => !v)}
+                      className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>{isAddingCustomCategory ? 'Cancel' : '+ New'}</span>
+                    </button>
+                  </div>
+
+                  {/* Inline New Category Input */}
+                  {isAddingCustomCategory && (
+                    <div className="mb-2 p-1.5 bg-slate-900 border border-indigo-500/50 rounded-xl flex items-center gap-1.5 shadow-lg animate-fadeIn">
+                      <input
+                        type="text"
+                        placeholder="e.g. Gym, Pet Care..."
+                        value={newCustomCategoryName}
+                        onChange={(e) => setNewCustomCategoryName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCustomCategory();
+                          }
+                        }}
+                        className="flex-1 bg-slate-950 border border-slate-700/80 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        disabled={!newCustomCategoryName.trim() || addingCategoryLoading}
+                        onClick={handleAddCustomCategory}
+                        className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors shrink-0 shadow-sm"
+                      >
+                        {addingCategoryLoading ? '...' : 'Add'}
+                      </button>
+                    </div>
+                  )}
+
                   <select
                     value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                    onChange={(e) => {
+                      if (e.target.value === '__ADD_NEW__') {
+                        setIsAddingCustomCategory(true);
+                      } else {
+                        setCategory(e.target.value);
+                      }
+                    }}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
                   >
-                    <option value="EMI & Loans">EMI & Loans (Installments)</option>
-                    <option value="Housing & Rent">Housing & Rent</option>
-                    <option value="Mobile & Internet Recharge">Mobile & Internet Recharge</option>
-                    <option value="Electricity & Utilities">Electricity & Utilities</option>
-                    <option value="Subscriptions & Streaming">Subscriptions & Streaming</option>
-                    <option value="Insurance & Health">Insurance & Health</option>
-                    <option value="Other">Other</option>
+                    {customCategories.length > 0 && (
+                      <optgroup label="Workspace Custom Categories">
+                        {customCategories.map((cat) => (
+                          <option key={`rec-custom-${cat}`} value={cat}>
+                            ✦ {cat}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    <optgroup label="Default Categories">
+                      <option value="EMI & Loans">EMI & Loans (Installments)</option>
+                      <option value="Housing & Rent">Housing & Rent</option>
+                      <option value="Mobile & Internet Recharge">Mobile & Internet Recharge</option>
+                      <option value="Electricity & Utilities">Electricity & Utilities</option>
+                      <option value="Subscriptions & Streaming">Subscriptions & Streaming</option>
+                      <option value="Insurance & Health">Insurance & Health</option>
+                      <option value="Groceries & Food">Groceries & Food</option>
+                      <option value="Transportation & Fuel">Transportation & Fuel</option>
+                      <option value="Education & Fees">Education & Fees</option>
+                      <option value="Personal Care">Personal Care</option>
+                      <option value="Other">Other</option>
+                    </optgroup>
+                    <optgroup label="Actions">
+                      <option value="__ADD_NEW__">+ Add Custom Category...</option>
+                    </optgroup>
                   </select>
                 </div>
               </div>
