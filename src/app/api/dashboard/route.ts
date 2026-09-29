@@ -82,14 +82,16 @@ export async function GET(req: NextRequest) {
           },
         },
       }),
-      prisma.actualSaving.findMany({
-        where: actualSavingsWhere,
-        include: {
-          user: {
-            select: { id: true, name: true, avatarColor: true },
+      prisma.actualSaving
+        .findMany({
+          where: actualSavingsWhere,
+          include: {
+            user: {
+              select: { id: true, name: true, avatarColor: true },
+            },
           },
-        },
-      }),
+        })
+        .catch(() => []),
     ]);
 
     if (!household) {
