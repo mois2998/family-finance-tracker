@@ -139,6 +139,28 @@ async function run() {
       });
     }
 
+    // 3.8 CustomCategories
+    const customCategories = await localPrisma.customCategory.findMany();
+    console.log(`Found ${customCategories.length} custom category(s) locally.`);
+    for (const c of customCategories) {
+      await externalPrisma.customCategory.upsert({
+        where: { id: c.id },
+        update: c,
+        create: c,
+      });
+    }
+
+    // 3.9 ActualSavings
+    const actualSavings = await localPrisma.actualSaving.findMany();
+    console.log(`Found ${actualSavings.length} actual saving record(s) locally.`);
+    for (const s of actualSavings) {
+      await externalPrisma.actualSaving.upsert({
+        where: { id: s.id },
+        update: s,
+        create: s,
+      });
+    }
+
     console.log('\n======================================================');
     console.log('🎉 SUCCESS! All local data migrated to external MySQL!');
     console.log(`   - Households: ${households.length}`);

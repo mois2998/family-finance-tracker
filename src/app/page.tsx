@@ -8,6 +8,9 @@ import ColdStartIndicator from '@/components/dashboard/ColdStartIndicator';
 import ForecastChart from '@/components/dashboard/ForecastChart';
 import UpcomingExpensesPanel from '@/components/dashboard/UpcomingExpensesPanel';
 import CategoryBreakdownChart from '@/components/dashboard/CategoryBreakdownChart';
+import ReconciliationCard from '@/components/dashboard/ReconciliationCard';
+import SetActualSavingsModal from '@/components/modals/SetActualSavingsModal';
+import AddTransactionModal from '@/components/modals/AddTransactionModal';
 import {
   Wallet,
   Receipt,
@@ -19,6 +22,7 @@ import {
   Plus,
   RefreshCw,
   Clock,
+  Edit3,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
@@ -29,6 +33,17 @@ export default function DashboardPage() {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const [isSetSavingsModalOpen, setIsSetSavingsModalOpen] = useState(false);
+  const [savingsMonthKey, setSavingsMonthKey] = useState<string | undefined>(undefined);
+  const [isQuickAddModalOpen, setIsQuickAddModalOpen] = useState(false);
+  const [quickAddPrefill, setQuickAddPrefill] = useState<{
+    defaultType?: 'EXPENSE' | 'INCOME';
+    initialAmount?: string;
+    initialCategory?: string;
+    initialDescription?: string;
+    initialIncomeSource?: string;
+  }>({});
 
   // Redirect unauthenticated user to /login
   useEffect(() => {
@@ -60,6 +75,31 @@ export default function DashboardPage() {
       fetchDashboard();
     }
   }, [currentUser, view, fetchDashboard]);
+
+  const handleOpenSetSavings = (monthKey?: string) => {
+    setSavingsMonthKey(monthKey);
+    setIsSetSavingsModalOpen(true);
+  };
+
+  const handleQuickLogUntrackedExpense = (amount: number) => {
+    setQuickAddPrefill({
+      defaultType: 'EXPENSE',
+      initialAmount: Math.round(amount).toString(),
+      initialCategory: 'Other',
+      initialDescription: 'Untracked cash / miscellaneous spending adjustment',
+    });
+    setIsQuickAddModalOpen(true);
+  };
+
+  const handleQuickLogUntrackedIncome = (amount: number) => {
+    setQuickAddPrefill({
+      defaultType: 'INCOME',
+      initialAmount: Math.round(amount).toString(),
+      initialIncomeSource: 'Other',
+      initialDescription: 'Untracked income / cashback surplus adjustment',
+    });
+    setIsQuickAddModalOpen(true);
+  };
 
   // Handler for quick-adding recurring presets from ColdStartIndicator
   const handleQuickAddRecurring = async (preset: any) => {
@@ -232,33 +272,59 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 3. Projected Net Savings */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-[#0f172a]/80 border border-slate-800 shadow-lg relative overflow-hidden">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Projected Savings
-              </span>
-              <div className="p-2 rounded-xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
-                <PiggyBank className="w-4 h-4" />
+          {/* 3. Actual Savings & Reconciliation Card */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#0f172a]/80 border border-slate-800 shadow-lg relative overflow-hidden flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Actual Savings
+                </span>
+                <button
+                  onClick={() => handleOpenSetSavings(dashboardData?.reconciliation?.monthKey)}
+                  className="p-1.5 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/20 transition-all flex items-center gap-1 text-[11px] font-medium"
+                  title="Set or Edit Actual Savings"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Set</span>
+                </button>
+              </div>
+              <div className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                {dashboardData?.reconciliation?.hasActualSavings ? (
+                  `${currency}${dashboardData.reconciliation.actualSavingsAmount.toLocaleString('en-IN')}`
+                ) : (
+                  <span className="text-xl sm:text-2xl font-bold text-slate-400 italic">
+                    {currency}{stats?.currentMonthNet?.toLocaleString('en-IN') || 0}
+                  </span>
+                )}
               </div>
             </div>
-            <div
-              className={`text-2xl sm:text-3xl font-black tracking-tight ${
-                (stats?.projectedNetSavings || 0) < 0 ? 'text-rose-400' : 'text-indigo-300'
-              }`}
-            >
-              {currency}
-              {stats?.projectedNetSavings?.toLocaleString('en-IN') || 0}
-            </div>
-            <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-800/80 text-xs text-slate-400">
-              <span>Savings Rate:</span>
-              <span
-                className={`font-semibold ${
-                  (stats?.savingsRatePercentage || 0) <= 5 ? 'text-rose-400' : 'text-indigo-400'
-                }`}
-              >
-                {stats?.savingsRatePercentage || 0}%
-              </span>
+
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-800/80 text-xs">
+              {dashboardData?.reconciliation?.hasActualSavings ? (
+                <>
+                  <span className="text-slate-400">Untracked:</span>
+                  {dashboardData.reconciliation.untrackedType === 'SPENDING_LEAKAGE' && (
+                    <span className="font-bold text-rose-400">
+                      -{currency}{Math.abs(dashboardData.reconciliation.untrackedAmount).toLocaleString('en-IN')} Leakage
+                    </span>
+                  )}
+                  {dashboardData.reconciliation.untrackedType === 'SURPLUS' && (
+                    <span className="font-bold text-emerald-400">
+                      +{currency}{Math.abs(dashboardData.reconciliation.untrackedAmount).toLocaleString('en-IN')} Surplus
+                    </span>
+                  )}
+                  {dashboardData.reconciliation.untrackedType === 'EXACT_MATCH' && (
+                    <span className="font-bold text-indigo-400">100% Balanced</span>
+                  )}
+                </>
+              ) : (
+                <>
+                  <span className="text-slate-400">Expected Net:</span>
+                  <span className="font-semibold text-indigo-400">
+                    {currency}{stats?.currentMonthNet?.toLocaleString('en-IN') || 0}
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
@@ -285,6 +351,19 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* Savings Reconciliation & Untracked Cash Detector */}
+        <ReconciliationCard
+          reconciliation={dashboardData?.reconciliation}
+          currency={currency}
+          viewMode={view}
+          isAdmin={currentUser.role === 'ADMIN'}
+          onOpenSetModal={handleOpenSetSavings}
+          onQuickLogUntrackedExpense={handleQuickLogUntrackedExpense}
+          onQuickLogUntrackedIncome={handleQuickLogUntrackedIncome}
+          trackedIncome={stats?.currentMonthActualIncome || 0}
+          trackedExpense={stats?.currentMonthActualSpend || 0}
+        />
 
         {/* Multi-Column Grid: Left (Forecast Chart + Recent) & Right (Upcoming Bills + Category Donut) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -422,6 +501,33 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Set Actual Savings Modal */}
+      <SetActualSavingsModal
+        isOpen={isSetSavingsModalOpen}
+        onClose={() => setIsSetSavingsModalOpen(false)}
+        onSaved={fetchDashboard}
+        currency={currency}
+        initialMonthKey={savingsMonthKey}
+        members={dashboardData?.household?.members || []}
+        isAdmin={currentUser.role === 'ADMIN'}
+        currentUserId={currentUser.id}
+      />
+
+      {/* Quick Log Modal for Untracked Discrepancies */}
+      <AddTransactionModal
+        isOpen={isQuickAddModalOpen}
+        onClose={() => setIsQuickAddModalOpen(false)}
+        onSuccess={fetchDashboard}
+        members={dashboardData?.household?.members || []}
+        currentUserId={currentUser.id}
+        currency={currency}
+        defaultType={quickAddPrefill.defaultType || 'EXPENSE'}
+        initialAmount={quickAddPrefill.initialAmount}
+        initialCategory={quickAddPrefill.initialCategory}
+        initialDescription={quickAddPrefill.initialDescription}
+        initialIncomeSource={quickAddPrefill.initialIncomeSource}
+      />
     </AppShell>
   );
 }

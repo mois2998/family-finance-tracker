@@ -18,6 +18,10 @@ interface AddTransactionModalProps {
   currentUserId: string;
   currency?: string;
   defaultType?: 'EXPENSE' | 'INCOME';
+  initialAmount?: string;
+  initialCategory?: string;
+  initialDescription?: string;
+  initialIncomeSource?: string;
 }
 
 const EXPENSE_CATEGORIES = [
@@ -54,6 +58,10 @@ export default function AddTransactionModal({
   currentUserId,
   currency = '₹',
   defaultType = 'EXPENSE',
+  initialAmount,
+  initialCategory,
+  initialDescription,
+  initialIncomeSource,
 }: AddTransactionModalProps) {
   const { showFeedback } = useFeedback();
   const [tab, setTab] = useState<'EXPENSE' | 'INCOME'>(defaultType);
@@ -121,9 +129,20 @@ export default function AddTransactionModal({
     setNewCategoryName('');
     setNewIncomeSourceName('');
     if (isOpen) {
+      setTab(defaultType);
+      if (initialAmount) {
+        if (defaultType === 'EXPENSE') setAmount(initialAmount);
+        else setIncomeAmount(initialAmount);
+      } else {
+        setAmount('');
+        setIncomeAmount('');
+      }
+      if (initialCategory) setCategory(initialCategory);
+      if (initialDescription) setDescription(initialDescription);
+      if (initialIncomeSource) setIncomeSource(initialIncomeSource);
       fetchCustomCategories();
     }
-  }, [currentUserId, isOpen]);
+  }, [currentUserId, isOpen, defaultType, initialAmount, initialCategory, initialDescription, initialIncomeSource]);
 
   const handleAddCustomCategory = async (type: 'EXPENSE' | 'INCOME') => {
     const nameToCreate = type === 'EXPENSE' ? newCategoryName.trim() : newIncomeSourceName.trim();

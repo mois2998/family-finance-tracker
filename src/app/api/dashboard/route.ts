@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionFromRequest } from '@/lib/auth';
 import { generateForecastSummary } from '@/lib/forecasting';
-import { isSameMonth } from 'date-fns';
+import { isSameMonth, format } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,8 +33,14 @@ export async function GET(req: NextRequest) {
       recurringWhere.userId = session.userId;
     }
 
+    const currentMonthKey = format(now, 'yyyy-MM');
+    const actualSavingsWhere: any = { householdId: session.householdId, monthKey: currentMonthKey };
+    if (isPersonal) {
+      actualSavingsWhere.userId = session.userId;
+    }
+
     // Parallel execution of all database queries
-    const [household, activeIncomes, activeExpenses, activeRecurring] = await Promise.all([
+    const [household, activeIncomes, activeExpenses, activeRecurring, actualSavingsRecords] = await Promise.all([
       prisma.household.findUnique({
         where: { id: session.householdId },
         include: {
@@ -70,6 +76,14 @@ export async function GET(req: NextRequest) {
       prisma.recurringExpense.findMany({
         where: recurringWhere,
         orderBy: { nextDueDate: 'asc' },
+        include: {
+          user: {
+            select: { id: true, name: true, avatarColor: true },
+          },
+        },
+      }),
+      prisma.actualSaving.findMany({
+        where: actualSavingsWhere,
         include: {
           user: {
             select: { id: true, name: true, avatarColor: true },
@@ -169,6 +183,87 @@ export async function GET(req: NextRequest) {
       memberBreakdown = Object.values(memberMap);
     }
 
+    // Reconciliation calculation (Actual vs Expected Savings & Untracked Cash Detector)
+    const expectedSavings = currentMonthActualIncome - currentMonthActualSpend;
+    let hasActualSavings = false;
+    let actualSavingsAmount = 0;
+    let primaryActualRecord: any = null;
+
+    if (isPersonal) {
+      primaryActualRecord = actualSavingsRecords.find((r) => r.userId === session.userId) || null;
+      if (primaryActualRecord) {
+        hasActualSavings = true;
+        actualSavingsAmount = primaryActualRecord.actualAmount;
+      }
+    } else {
+      if (actualSavingsRecords.length > 0) {
+        hasActualSavings = true;
+        actualSavingsAmount = actualSavingsRecords.reduce((sum, r) => sum + r.actualAmount, 0);
+        primaryActualRecord = actualSavingsRecords[0];
+      }
+    }
+
+    const untrackedAmount = hasActualSavings ? expectedSavings - actualSavingsAmount : 0;
+    let untrackedType: 'SPENDING_LEAKAGE' | 'SURPLUS' | 'EXACT_MATCH' | 'NOT_SET' = 'NOT_SET';
+    if (!hasActualSavings) {
+      untrackedType = 'NOT_SET';
+    } else if (untrackedAmount > 0.01) {
+      untrackedType = 'SPENDING_LEAKAGE';
+    } else if (untrackedAmount < -0.01) {
+      untrackedType = 'SURPLUS';
+    } else {
+      untrackedType = 'EXACT_MATCH';
+    }
+
+    // Member reconciliation breakdown for household view
+    let memberReconciliations: any[] = [];
+    if (isAdmin && view === 'household') {
+      memberReconciliations = household.users.map((member) => {
+        const mIncomes = activeIncomes.filter(
+          (i) => i.userId === member.id && isSameMonth(new Date(i.dateReceived), now)
+        );
+        const mExpenses = activeExpenses.filter(
+          (e) => e.userId === member.id && isSameMonth(new Date(e.date), now)
+        );
+        const mActual = actualSavingsRecords.find((r) => r.userId === member.id);
+
+        const mInc = mIncomes.reduce((s, i) => s + i.amount, 0);
+        const mExp = mExpenses.reduce((s, e) => s + e.amount, 0);
+        const mExpSavings = mInc - mExp;
+
+        const mHas = !!mActual;
+        const mActualAmt = mActual ? mActual.actualAmount : null;
+        const mUntracked = mHas ? mExpSavings - (mActualAmt || 0) : null;
+
+        let mType: 'SPENDING_LEAKAGE' | 'SURPLUS' | 'EXACT_MATCH' | 'NOT_SET' = 'NOT_SET';
+        if (!mHas) {
+          mType = 'NOT_SET';
+        } else if ((mUntracked || 0) > 0.01) {
+          mType = 'SPENDING_LEAKAGE';
+        } else if ((mUntracked || 0) < -0.01) {
+          mType = 'SURPLUS';
+        } else {
+          mType = 'EXACT_MATCH';
+        }
+
+        return {
+          userId: member.id,
+          userName: member.name,
+          avatarColor: member.avatarColor,
+          role: member.role,
+          trackedIncome: mInc,
+          trackedExpense: mExp,
+          expectedSavings: mExpSavings,
+          hasActualSavings: mHas,
+          actualAmount: mActualAmt,
+          untrackedAmount: mUntracked,
+          untrackedType: mType,
+          accountName: mActual?.accountName || null,
+          notes: mActual?.notes || null,
+        };
+      });
+    }
+
     // Recent transactions (last 10)
     const recentExpenses = activeExpenses.slice(0, 10);
 
@@ -194,6 +289,19 @@ export async function GET(req: NextRequest) {
         totalExpensesCount: activeExpenses.length,
         totalIncomesCount: activeIncomes.length,
         activeRecurringCount: activeRecurring.filter((r) => r.isActive).length,
+      },
+      reconciliation: {
+        monthKey: currentMonthKey,
+        monthName: format(now, 'MMMM yyyy'),
+        hasActualSavings,
+        actualSavingsAmount,
+        expectedSavings,
+        untrackedAmount,
+        untrackedType,
+        accountName: primaryActualRecord?.accountName || null,
+        notes: primaryActualRecord?.notes || null,
+        updatedAt: primaryActualRecord?.updatedAt ? primaryActualRecord.updatedAt.toISOString() : null,
+        memberReconciliations,
       },
       forecast,
       categoryBreakdown,

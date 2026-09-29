@@ -20,6 +20,10 @@ Designed specifically for multi-user households: each family member has their ow
 - **Deficit & Burn Rate Warning Banners**:
   - Visible alerts trigger whenever projected end-of-month savings are close to zero or negative.
   - Displays exact cash deficit, daily burn rate (₹/day), and estimated days remaining in the billing period.
+- **Real Savings Audit & Untracked Cash Detector**:
+  - Insert your real bank balance and physical cash savings per month to compare against logged transactions.
+  - Automatically calculates discrepancies: alerts you to unrecorded **cash leakages/untracked spending** or **untracked surplus** with 1-click expense/income logging.
+  - Admin view includes member-by-member reconciliation breakdown.
 - **Mobile-First Responsive UX & PWA**:
   - Desktop: Multi-column layout with left navigation sidebar and quick actions.
   - Mobile: Clean bottom navigation bar with floating action button (+) for rapid expense logging on the go.
@@ -175,3 +179,6 @@ To let family members access the app from their phones outside your home network
 - **`RecurringExpense`**: Fixed commitments (`id`, `householdId`, `userId`, `name`, `category`, `amount`, `frequency`, `durationInDays`, `nextDueDate`, `confidence`, `isActive`).
 - **`CategoryBudget`**: Monthly spend caps per category.
 - **`SavingsGoal`**: Shared household target milestones.
+- **`ActualSaving`**: Monthly real savings balance & audit (`id`, `householdId`, `userId`, `monthKey`, `actualAmount`, `accountName`, `notes`).
+- **`CustomCategory`**: Household custom transaction tags (`id`, `householdId`, `name`, `type`, `color`, `icon`).
+- **`Feedback`**: In-app bug reports and feedback submissions.

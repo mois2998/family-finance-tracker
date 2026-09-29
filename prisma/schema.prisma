@@ -25,6 +25,7 @@ model Household {
   savingsGoals      SavingsGoal[]
   feedbacks         Feedback[]
   customCategories  CustomCategory[]
+  actualSavings     ActualSaving[]
 }
 
 model User {
@@ -42,6 +43,7 @@ model User {
   expenses          Expense[]
   recurringExpenses RecurringExpense[]
   feedbacks         Feedback[]
+  actualSavings     ActualSaving[]
 
   @@index([householdId])
 }
@@ -177,3 +179,23 @@ model CustomCategory {
   @@unique([householdId, name, type])
   @@index([householdId])
 }
+
+model ActualSaving {
+  id           String    @id @default(uuid())
+  householdId  String
+  household    Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monthKey     String    // "YYYY-MM" e.g., "2026-09"
+  actualAmount Float
+  accountName  String?   // e.g. "Bank Balance + Cash", "HDFC Savings"
+  notes        String?   @db.Text
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([householdId, userId, monthKey])
+  @@index([householdId])
+  @@index([userId])
+  @@index([householdId, monthKey])
+}
+

@@ -24,7 +24,12 @@ import {
   CheckCircle,
   RotateCcw,
   Sparkles,
+  PiggyBank,
+  TrendingDown,
+  TrendingUp,
+  Edit3,
 } from 'lucide-react';
+import SetActualSavingsModal from '@/components/modals/SetActualSavingsModal';
 import {
   format,
   addMonths,
@@ -77,6 +82,8 @@ export default function ExpensesPage() {
   const [rawIncomes, setRawIncomes] = useState<any[]>([]);
   const [rawRecurring, setRawRecurring] = useState<any[]>([]);
   const [allTemplateIncomes, setAllTemplateIncomes] = useState<any[]>([]);
+  const [actualSavingsInfo, setActualSavingsInfo] = useState<any>(null);
+  const [isSetSavingsOpen, setIsSetSavingsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Filters
@@ -163,6 +170,18 @@ export default function ExpensesPage() {
       if (allIncRes.ok) {
         const data = await allIncRes.json();
         setAllTemplateIncomes(data.incomes || []);
+      }
+
+      if (!isAllTime && selectedMonth) {
+        try {
+          const actRes = await fetch(`/api/savings/actual?monthKey=${selectedMonth}&view=${targetView}`);
+          if (actRes.ok) {
+            const actData = await actRes.json();
+            setActualSavingsInfo(actData);
+          }
+        } catch {}
+      } else {
+        setActualSavingsInfo(null);
       }
     } catch (e) {
       console.error('Error fetching transactions:', e);
@@ -812,6 +831,75 @@ export default function ExpensesPage() {
           </div>
         </div>
 
+        {/* Savings Audit & Untracked Cash Bar (when specific month is active) */}
+        {!isAllTime && (
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-slate-900/95 via-indigo-950/30 to-slate-900/95 border border-slate-800 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-2 rounded-xl border ${
+                  actualSavingsInfo?.untrackedType === 'SPENDING_LEAKAGE'
+                    ? 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                    : actualSavingsInfo?.untrackedType === 'SURPLUS'
+                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                    : actualSavingsInfo?.untrackedType === 'EXACT_MATCH'
+                    ? 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30'
+                    : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                }`}
+              >
+                <PiggyBank className="w-4 h-4" />
+              </div>
+              <div className="text-xs">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-white">
+                    {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')} Savings Audit:
+                  </span>
+                  {actualSavingsInfo?.hasActualSavings ? (
+                    <>
+                      <span className="text-slate-300 font-semibold">
+                        Actual Saved:{' '}
+                        <strong className="text-white font-mono">
+                          {currency}
+                          {(actualSavingsInfo.actualAmount || 0).toLocaleString('en-IN')}
+                        </strong>
+                      </span>
+                      {actualSavingsInfo.untrackedType === 'SPENDING_LEAKAGE' && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                          ⚠️ -{currency}
+                          {Math.abs(actualSavingsInfo.untrackedAmount || 0).toLocaleString('en-IN')} Untracked Spend
+                        </span>
+                      )}
+                      {actualSavingsInfo.untrackedType === 'SURPLUS' && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          ✨ +{currency}
+                          {Math.abs(actualSavingsInfo.untrackedAmount || 0).toLocaleString('en-IN')} Untracked Surplus
+                        </span>
+                      )}
+                      {actualSavingsInfo.untrackedType === 'EXACT_MATCH' && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                          🎯 100% Balanced
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-slate-400 italic">
+                      Actual savings not inserted yet. Click button to enter.
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsSetSavingsOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold flex items-center gap-1.5 transition-all self-end sm:self-auto shrink-0"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>{actualSavingsInfo?.hasActualSavings ? 'Edit Actual Savings' : 'Set Actual Savings'}</span>
+            </button>
+          </div>
+        )}
+
         {/* Filter Controls Bar */}
         <div className="space-y-3 bg-[#0f172a]/90 p-3 sm:p-4 rounded-2xl border border-slate-800 shadow-lg">
           {/* Top Filter Row: Added vs Deducted Switcher Tabs */}
@@ -1249,6 +1337,18 @@ export default function ExpensesPage() {
           </div>
         )}
       </div>
+
+      {/* Set Actual Savings Modal */}
+      <SetActualSavingsModal
+        isOpen={isSetSavingsOpen}
+        onClose={() => setIsSetSavingsOpen(false)}
+        onSaved={fetchTransactions}
+        currency={currency}
+        initialMonthKey={selectedMonth}
+        members={rawExpenses?.[0]?.household?.users || []}
+        isAdmin={isAdmin}
+        currentUserId={currentUser.id}
+      />
     </AppShell>
   );
 }
