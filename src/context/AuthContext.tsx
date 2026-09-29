@@ -48,7 +48,7 @@ const VIEW_STORAGE_KEY = 'family_finance_view_mode';
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewModeState] = useState<'household' | 'personal'>('personal');
+  const [viewMode, setViewModeState] = useState<'household' | 'personal'>('household');
   const router = useRouter();
   const pathname = usePathname();
 
